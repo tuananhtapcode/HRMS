@@ -20,3 +20,7 @@ app:
   jwt:
     secret: 'DayLaMotChuAiBiMatMoiRatDaiVaAnToanHonChuoiCuRatNhieu_Phai64KyTuNhe'
     expiration-ms: 86400000 # 1 ngày (24 * 60 * 60 * 1000)
+
+
+api:
+  prefix: /api/v1
