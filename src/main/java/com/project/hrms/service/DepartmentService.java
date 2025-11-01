@@ -24,8 +24,8 @@ public class DepartmentService implements IDepartmentService {
 
     @PostConstruct
     public void settupMapper(){
-        modelMapper.typeMap(AccountDTO.class, Account.class)
-                .addMappings(mapper -> mapper.skip(Account::setAccountId));
+        modelMapper.typeMap(DepartmentDTO.class, Department.class)
+                .addMappings(mapper -> mapper.skip(Department::setDepartmentId));
     }
 
     @Override

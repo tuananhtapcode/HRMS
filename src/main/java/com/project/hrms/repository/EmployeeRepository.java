@@ -11,7 +11,7 @@ public interface EmployeeRepository extends JpaRepository<Employee, Long> {
     boolean existsByBankAccount(String bankAccount);
     List<Employee> findByDepartment_DepartmentId(Long departmentId);
     List<Employee> findByJobPosition_JobPositionId(Long jobPositionId);
-    List<Employee> findByManager_ManagerId(Long managerId);
+//    List<Employee> findByManager_ManagerId(Long managerId);
     List<Employee> findByFullNameContainingIgnoreCase(String keyword);
     List<Employee> findByStatus(String status);
 }

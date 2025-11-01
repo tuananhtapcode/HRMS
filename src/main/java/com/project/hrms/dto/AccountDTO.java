@@ -10,19 +10,19 @@ import lombok.*;
 @Builder
 public class AccountDTO {
     @NotBlank(message = "Tên đăng nhập không được để trống")
-//    @Size(min = 3, max = 50, message = "Tên đăng nhập phải từ 3-50 ký tự")
+    @Size(min = 3, max = 50, message = "Tên đăng nhập phải từ 3-50 ký tự")
     private String username;
 
     @NotBlank(message = "Mật khẩu không được để trống")
-//    @Size(min = 6, message = "Mật khẩu phải có ít nhất 6 ký tự")
+    @Size(min = 6, message = "Mật khẩu phải có ít nhất 6 ký tự")
     private String password;
 
-//    @NotBlank(message = "Email không được để trống")
-//    @Email(message = "Email không hợp lệ")
+    @NotBlank(message = "Email không được để trống")
+    @Email(message = "Email không hợp lệ")
     private String email;
 
     @JsonProperty("phone_number")
-//    @Pattern(regexp = "^(\\+84|0)[0-9]{9,10}$", message = "Số điện thoại không hợp lệ")
+    @Pattern(regexp = "^(\\+84|0)[0-9]{9,10}$", message = "Số điện thoại không hợp lệ")
     private String phoneNumber;
 
     @JsonProperty("role_id")
@@ -30,6 +30,13 @@ public class AccountDTO {
     private Long roleId;
 
     @JsonProperty("employee_id")
-    @NotNull(message = "Employee ID không được để trống")
     private Long employeeId;
+
+    // Constructor để tạo DTO từ request
+    public AccountDTO(String username, String password, String email, String phoneNumber) {
+        this.username = username;
+        this.password = password;
+        this.email = email;
+        this.phoneNumber = phoneNumber;
+    }
 }

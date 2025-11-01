@@ -2,18 +2,22 @@ package com.project.hrms.service;
 
 import com.project.hrms.dto.AccountDTO;
 import com.project.hrms.model.Account;
+import com.project.hrms.response.AccountResponse;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 
 import java.util.List;
-import java.util.Optional;
 
 public interface IAccountService {
     Account create(AccountDTO accountDTO);
 
-    Account update(Long id, AccountDTO accountDTO);
+    AccountResponse update(Long id, AccountDTO accountDTO);
 
-    Account delete(Long id);
+    void delete(Long id);
 
-    List<Account> getAll();
+    Page<AccountResponse> getAllPaged(PageRequest pageRequest);
+
+    Page<AccountResponse> searchAccounts(String keyword, PageRequest pageRequest);
 
     Account getById(Long id);
 
@@ -23,4 +27,9 @@ public interface IAccountService {
 
     boolean existsByUsername(String username);
 
+    boolean existsByEmail(String email);
+
+    Account changePassword(String username, String oldPassword, String newPassword);
+
+    Account resetPassword(Long accountId);
 }

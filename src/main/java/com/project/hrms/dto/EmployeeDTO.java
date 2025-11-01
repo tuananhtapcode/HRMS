@@ -1,12 +1,12 @@
 package com.project.hrms.dto;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
 import java.time.LocalDate;
 
 @Data
@@ -14,20 +14,15 @@ import java.time.LocalDate;
 @AllArgsConstructor
 @Builder
 public class EmployeeDTO {
-    @NotBlank(message = "Mã nhân viên không được để trống")
-//    @Size(max = 20, message = "Mã nhân viên không được vượt quá 20 ký tự")
-    @JsonProperty("employee_code")
-    private String employeeCode;
+    private Long employeeId;
 
-    @NotBlank(message = "Họ và tên không được để trống")
-    @JsonProperty("full_name")
+    @NotBlank(message = "Họ không được để trống")
     private String fullName;
 
     private String gender;
 
     //    @JsonFormat(pattern = "yyyy-MM-dd")
-    @JsonProperty("birth_date")
-    private LocalDate birthDate;
+    private LocalDate dateOfBirth;
 
     //    @Email(message = "Email không hợp lệ")
 //    @NotBlank(message = "Email không được để trống")
@@ -51,17 +46,11 @@ public class EmployeeDTO {
     @JsonProperty("bank_name")
     private String bankName;
 
-    @JsonProperty("bank_account")
     private String bankAccount;
 
-    @JsonProperty("bank_number")
     private String bankNumber;
 
     private String address;
 
     private String status;
-
-    @JsonProperty("manager_id")
-    private Long managerId;
-
 }

@@ -1,6 +1,6 @@
 
 server:
-  port: 8888
+  port: 1234
 
 spring:
   datasource:
@@ -19,7 +19,7 @@ spring:
 app:
   jwt:
     secret: 'DayLaMotChuAiBiMatMoiRatDaiVaAnToanHonChuoiCuRatNhieu_Phai64KyTuNhe'
-    expiration-ms: 86400000 # 1 ngày (24 * 60 * 60 * 1000)
+    expiration-ms: 2592000000 # 30 ngày (30 * 24 * 60 * 60 * 1000)
 
 
 api:

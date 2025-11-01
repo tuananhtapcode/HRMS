@@ -33,7 +33,7 @@ public interface IEmployeeService {
     List<Employee> findByJobPositionId(Long jobPositionId);
 
     // Tìm nhân viên theo manager
-    List<Employee> findByManagerId(Long managerId);
+//    List<Employee> findByManagerId(Long managerId);
 
     // Tìm kiếm nhân viên theo tên
     List<Employee> searchByName(String keyword);

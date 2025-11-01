@@ -122,10 +122,10 @@ public class EmployeeService implements IEmployeeService {
         return employeeRepository.findByJobPosition_JobPositionId(jobPositionId);
     }
 
-    @Override
-    public List<Employee> findByManagerId(Long managerId) {
-        return employeeRepository.findByManager_ManagerId(managerId);
-    }
+//    @Override
+//    public List<Employee> findByManagerId(Long managerId) {
+//        return employeeRepository.findByManager_ManagerId(managerId);
+//    }
 
     @Override
     public List<Employee> searchByName(String keyword) {
