@@ -1,70 +1,77 @@
 package com.project.hrms.service;
 
+import com.project.hrms.dto.AccountDTO;
 import com.project.hrms.dto.DepartmentDTO;
-import com.project.hrms.exception.DataNotFoundException;
+import com.project.hrms.model.Account;
 import com.project.hrms.model.Department;
-import com.project.hrms.model.Employee;
 import com.project.hrms.repository.DepartmentRepository;
 import com.project.hrms.repository.EmployeeRepository;
+import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
-import org.modelmapper.convention.MatchingStrategies;
 import org.springframework.stereotype.Service;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
 @RequiredArgsConstructor
 @Service
-public class DepartmentService implements IDepartment {
-
-    private final EmployeeRepository employeeRepository;
+public class DepartmentService implements IDepartmentService {
     private final DepartmentRepository departmentRepository;
+    private final EmployeeRepository employeeRepository;
     private final ModelMapper modelMapper;
+
+    @PostConstruct
+    public void settupMapper(){
+        modelMapper.typeMap(DepartmentDTO.class, Department.class)
+                .addMappings(mapper -> mapper.skip(Department::setDepartmentId));
+    }
+
     @Override
-    public Department createDepartment(DepartmentDTO DepartmentDTO) {
-        // Bật strict mode để phát hiện field mismatch
-        modelMapper.getConfiguration()
-                .setMatchingStrategy(MatchingStrategies.STRICT);
+    public Department create(DepartmentDTO newDepartmentDTO) {
+        Department department = modelMapper.map(newDepartmentDTO, Department.class);
 
-        // Map DTO -> Entity
-        Department department = modelMapper.map(DepartmentDTO, Department.class);
-
-
-        // Debug log để kiểm tra giá trị sau khi map
-        System.out.println("Mapped DepartmentService = " + department);
+        if (newDepartmentDTO.getManagerId() != null) {
+            employeeRepository.findById(newDepartmentDTO.getManagerId())
+                    .ifPresent(department::setManager);
+        }
 
         return departmentRepository.save(department);
     }
 
-
     @Override
-    public Department getDepartment(Long id) {
-        return departmentRepository.findById(id)
-                .orElseThrow(()->new DataNotFoundException("Cannot find Department with id: "+id));
+    public Department getById(Long departmentId) {
+        return departmentRepository.findById(departmentId)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND, "Department not found with id: " + departmentId));
     }
 
     @Override
-    public Department updateDepartment(Long id, DepartmentDTO departmentDTO) {
-        //tìm xem order detail có tồn tại ko roi moi lam cai khac
-        Department existingDepartment= departmentRepository.findById(id)
-                .orElseThrow(() -> new DataNotFoundException("Cannot find order detail with id: "+id));
-        existingDepartment.setCode(departmentDTO.getCode());
-        existingDepartment.setName(departmentDTO.getName());
-        existingDepartment.setDescription(departmentDTO.getDescription());
+    public Department update(Long id, DepartmentDTO departmentDTO) {
+        Department existingDepartment = getById(id);
 
-        Employee existingEmployee = employeeRepository.findById(departmentDTO.getManagerId())
-                .orElseThrow(() -> new DataNotFoundException("Cannot find manager with id: "+departmentDTO.getManagerId()));
-        existingDepartment.setManager(existingEmployee);
+        modelMapper.map(departmentDTO, existingDepartment);
+
+        if (departmentDTO.getManagerId() != null) {
+            employeeRepository.findById(departmentDTO.getManagerId())
+                    .ifPresent(existingDepartment::setManager);
+        }
+
         return departmentRepository.save(existingDepartment);
     }
 
     @Override
-    public void deleteById(Long id) {
-        departmentRepository.deleteById(id);
+    public void deleteById(Long departmentId) {
+        if (!departmentRepository.existsById(departmentId)) {
+            throw new ResponseStatusException(
+                    HttpStatus.NOT_FOUND, "Department not found with id: " + departmentId);
+        }
+        departmentRepository.deleteById(departmentId);
     }
 
     @Override
-    public List<Department> findByManager_EmployeeId(Long orderId) {
-        return departmentRepository.findByManager_EmployeeId(orderId);
+    public List<Department> findByManager_EmployeeId(Long managerId) {
+        return departmentRepository.findByManager_EmployeeId(managerId);
     }
 }

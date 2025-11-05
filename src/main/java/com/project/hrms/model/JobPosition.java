@@ -12,6 +12,7 @@ import java.math.BigDecimal;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class JobPosition extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -36,5 +37,5 @@ public class JobPosition extends BaseEntity {
     private BigDecimal maxSalary;
 
     @Column(name = "is_active")
-    private Boolean isActive = true;
+    private Boolean isActive = false;
 }

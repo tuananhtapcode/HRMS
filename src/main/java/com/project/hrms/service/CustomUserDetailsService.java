@@ -27,7 +27,7 @@ public class CustomUserDetailsService implements UserDetailsService {
 
         // 2. Lấy quyền (Role) của account
         // Giả sử model Account của bạn có getRole() trả về model Role có getName()
-        String roleName = "ROLE_" + account.getRole().getName().toUpperCase();
+        String roleName = "ROLE_" + account.getRole().getCode().toUpperCase();
 
         // 3. Chuyển đổi Account -> UserDetails của Spring
         return new User(
