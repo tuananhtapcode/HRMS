@@ -1,8 +1,10 @@
 package com.project.hrms.controller;
 
+import com.project.hrms.dto.ActivateAccountDTO;
 import com.project.hrms.dto.LoginRequestDTO;
 import com.project.hrms.dto.LoginResponseDTO;
 import com.project.hrms.dto.RegisterRequestDTO;
+import com.project.hrms.response.MessageResponse;
 import com.project.hrms.security.JwtTokenProvider;
 import com.project.hrms.service.AuthService;
 import jakarta.validation.Valid;
@@ -58,6 +60,23 @@ public class AuthController {
 
         // 4. Trả về token
         return ResponseEntity.ok(new LoginResponseDTO(jwt));
+    }
+
+    @PostMapping("/activate")
+    public ResponseEntity<?> activateAccount(
+            @Valid @RequestBody ActivateAccountDTO dto,
+            BindingResult bindingResult) {
+
+        if (bindingResult.hasErrors()) {
+            List<String> errorMessages = bindingResult.getFieldErrors()
+                    .stream()
+                    .map(FieldError::getDefaultMessage)
+                    .toList();
+            return ResponseEntity.badRequest().body(errorMessages);
+        }
+
+        authService.activateAccount(dto);
+        return ResponseEntity.ok(new MessageResponse("Kích hoạt tài khoản thành công!"));
     }
 
     @PostMapping("/register")

@@ -1,5 +1,6 @@
 package com.project.hrms.service;
 
+import com.project.hrms.dto.CreateEmployeeRequestDTO;
 import com.project.hrms.dto.EmployeeDTO;
 import com.project.hrms.model.Employee;
 import org.springframework.data.domain.Page;
@@ -58,4 +59,7 @@ public interface IEmployeeService {
 
     // Lấy lịch sử thay đổi thông tin ngân hàng
     List<String> getBankInfoHistory(Long employeeId);
+
+    //Test tao tai khoan
+    Employee createEmployeeAndAccount(CreateEmployeeRequestDTO dto) throws Exception;
 }

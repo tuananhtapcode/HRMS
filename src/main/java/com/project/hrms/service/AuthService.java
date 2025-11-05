@@ -1,6 +1,8 @@
 package com.project.hrms.service;
 
+import com.project.hrms.dto.ActivateAccountDTO;
 import com.project.hrms.dto.RegisterRequestDTO;
+import com.project.hrms.exception.DataNotFoundException;
 import com.project.hrms.exception.InvalidParamException;
 import com.project.hrms.model.Account;
 import com.project.hrms.model.Role;
@@ -9,6 +11,8 @@ import com.project.hrms.repository.RoleRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+
+import java.time.LocalDateTime;
 
 @Service
 @RequiredArgsConstructor
@@ -31,7 +35,7 @@ public class AuthService {
 
         // 3. Tìm Role mặc định (ví dụ: "USER")
         // Đảm bảo bạn có 1 Role tên "USER" trong bảng `role`
-        Role userRole = roleRepository.findByName("USER")
+        Role userRole = roleRepository.findByName("Quản Lý")
                 .orElseThrow(() -> new RuntimeException("Error: Default User Role not found."));
 
         // 4. Tạo Account mới
@@ -47,4 +51,19 @@ public class AuthService {
         // 5. Lưu vào database
         return accountRepository.save(account);
     }
+public void activateAccount(ActivateAccountDTO dto) {
+    Account account = accountRepository.findByActivationToken(dto.getToken())
+            .orElseThrow(() -> new DataNotFoundException("Token không hợp lệ hoặc đã được sử dụng."));
+
+    if (account.getActivationTokenExpires().isBefore(LocalDateTime.now())) {
+        throw new InvalidParamException("Token đã hết hạn.");
+    }
+
+    account.setIsActive(true);
+    account.setPassword(passwordEncoder.encode(dto.getNewPassword()));
+    account.setActivationToken(null);
+    account.setActivationTokenExpires(null);
+
+    accountRepository.save(account);
+}
 }

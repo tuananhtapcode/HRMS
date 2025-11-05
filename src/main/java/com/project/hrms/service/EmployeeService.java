@@ -1,15 +1,12 @@
 package com.project.hrms.service;
 
+import com.project.hrms.dto.CreateEmployeeRequestDTO;
 import com.project.hrms.dto.EmployeeDTO;
 import com.project.hrms.dto.JobPositionDTO;
 import com.project.hrms.exception.DataAlreadyExistsException;
 import com.project.hrms.exception.DataNotFoundException;
-import com.project.hrms.model.Department;
-import com.project.hrms.model.Employee;
-import com.project.hrms.model.JobPosition;
-import com.project.hrms.repository.DepartmentRepository;
-import com.project.hrms.repository.EmployeeRepository;
-import com.project.hrms.repository.JobPositionRepository;
+import com.project.hrms.model.*;
+import com.project.hrms.repository.*;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
@@ -17,7 +14,9 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 
 @RequiredArgsConstructor
 @Service
@@ -26,6 +25,9 @@ public class EmployeeService implements IEmployeeService {
     private final DepartmentRepository departmentRepository;
     private final JobPositionRepository jobPositionRepository;
     private final ModelMapper modelMapper;
+    private final AccountRepository accountRepository;
+    private final RoleRepository roleRepository;
+    private final EmailService emailService;
 
     @PostConstruct
     public void setupMapper() {
@@ -171,4 +173,54 @@ public class EmployeeService implements IEmployeeService {
         // demo tạm, nếu có bảng lịch sử bank thì query ở đây
         return List.of("Techcombank - 0123456789", "Vietcombank - 0987654321");
     }
-}
+
+    @Override
+    public Employee createEmployeeAndAccount(CreateEmployeeRequestDTO dto) throws Exception {
+        if (accountRepository.existsByEmail(dto.getEmail())) {
+            throw new DataAlreadyExistsException("Email đã được sử dụng");
+        }
+        if (employeeRepository.existsByEmployeeCode(dto.getEmployeeCode())) {
+            throw new DataAlreadyExistsException("Mã nhân viên đã tồn tại");
+        }
+
+        Department dept = departmentRepository.findById(dto.getDepartmentId())
+                .orElseThrow(() -> new DataNotFoundException("Không tìm thấy Department"));
+        JobPosition job = jobPositionRepository.findById(dto.getJobPositionId())
+                .orElseThrow(() -> new DataNotFoundException("Không tìm thấy JobPosition"));
+        Role role = roleRepository.findById(dto.getRoleId())
+                .orElseThrow(() -> new DataNotFoundException("Không tìm thấy Role"));
+
+        // 1. Tạo Employee
+        Employee newEmployee = new Employee();
+        newEmployee.setEmployeeCode(dto.getEmployeeCode());
+        newEmployee.setFullName(dto.getFullName());
+        newEmployee.setEmail(dto.getEmail());
+        newEmployee.setPhoneNumber(dto.getPhoneNumber());
+        newEmployee.setDepartment(dept);
+        newEmployee.setJobPosition(job);
+        newEmployee.setStatus(Employee.EmployeeStatus.valueOf("Active"));
+        Employee savedEmployee = employeeRepository.save(newEmployee);
+
+        // 2. Tạo Token Kích hoạt
+        String token = UUID.randomUUID().toString();
+
+        // 3. Tạo Account
+        Account newAccount = new Account();
+        newAccount.setUsername(dto.getEmail());
+        newAccount.setEmail(dto.getEmail());
+        newAccount.setPassword(null); // Rỗng
+        newAccount.setRole(role);
+        newAccount.setEmployee(savedEmployee); // Liên kết
+        newAccount.setIsActive(false); // Chưa kích hoạt
+        newAccount.setActivationToken(token);
+        newAccount.setActivationTokenExpires(LocalDateTime.now().plusDays(3)); // Hạn 3 ngày
+
+        accountRepository.save(newAccount);
+
+        // 4. Gửi Email
+        emailService.sendActivationEmail(savedEmployee.getEmail(), token);
+
+        return savedEmployee;
+    }
+    }
+

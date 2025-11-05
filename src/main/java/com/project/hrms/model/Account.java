@@ -3,6 +3,8 @@ package com.project.hrms.model;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.LocalDateTime;
+
 @Entity
 @Table(name = "account")
 @Data
@@ -17,7 +19,7 @@ public class Account extends BaseEntity {
     @Column(nullable = false, unique = true)
     private String username;
 
-    @Column(nullable = false)
+    @Column(name = "password", nullable = true)
     private String password;
 
     private String email;
@@ -35,4 +37,10 @@ public class Account extends BaseEntity {
     @ManyToOne
     @JoinColumn(name = "employee_id")
     private Employee employee;
+
+    @Column(name = "activation_token")
+    private String activationToken;
+
+    @Column(name = "activation_token_expires")
+    private LocalDateTime activationTokenExpires;
 }
