@@ -21,6 +21,7 @@ app:
     secret: 'DayLaMotChuAiBiMatMoiRatDaiVaAnToanHonChuoiCuRatNhieu_Phai64KyTuNhe'
     expiration-ms: 2592000000 # 30 ngày (30 * 24 * 60 * 60 * 1000)
 
-
+security:
+  disable: true
 api:
   prefix: /api/v1

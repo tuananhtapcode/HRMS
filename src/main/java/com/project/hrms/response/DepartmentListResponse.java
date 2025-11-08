@@ -7,9 +7,10 @@ import java.util.List;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+@Getter
+@Setter
 @Builder
-public class AccountListResponse {
-    private List<AccountResponse> accounts;
+public class DepartmentListResponse {
+    private List<DepartmentResponse> departmentResponseList;
     private int totalPages;
-    private long totalElements; // tổng số bản ghi (nếu cần)
 }

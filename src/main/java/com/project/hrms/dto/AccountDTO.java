@@ -21,22 +21,22 @@ public class AccountDTO {
     @Email(message = "Email không hợp lệ")
     private String email;
 
-    @JsonProperty("phone_number")
+//    @JsonProperty("phone_number")
     @Pattern(regexp = "^(\\+84|0)[0-9]{9,10}$", message = "Số điện thoại không hợp lệ")
     private String phoneNumber;
 
-    @JsonProperty("role_id")
+//    @JsonProperty("role_id")
     @NotNull(message = "Role ID không được để trống")
     private Long roleId;
 
-    @JsonProperty("employee_id")
+//    @JsonProperty("employee_id")
     private Long employeeId;
 
-    // Constructor để tạo DTO từ request
-    public AccountDTO(String username, String password, String email, String phoneNumber) {
-        this.username = username;
-        this.password = password;
-        this.email = email;
-        this.phoneNumber = phoneNumber;
-    }
+//    // Constructor để tạo DTO từ request
+//    public AccountDTO(String username, String password, String email, String phoneNumber) {
+//        this.username = username;
+//        this.password = password;
+//        this.email = email;
+//        this.phoneNumber = phoneNumber;
+//    }
 }

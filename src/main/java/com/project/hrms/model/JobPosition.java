@@ -16,26 +16,26 @@ import java.math.BigDecimal;
 public class JobPosition extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "job_position_id")
+//    @Column(name = "job_position_id")
     private Long jobPositionId;
 
-    @Column(nullable = false, unique = true)
+    @Column(nullable = false, unique = true, length = 50)
     private String code;
 
-    @Column(nullable = false)
+    @Column(nullable = false, unique = true, length = 100)
     private String name;
 
     private String description;
     private String level;
 
-    @Column(name = "min_salary")
+//    @Column(name = "min_salary")
     @Min(value = 0, message = "Salary must be >= 0")
     private BigDecimal minSalary;
 
-    @Column(name = "max_salary")
+//    @Column(name = "max_salary")
     @Min(value = 0, message = "Salary must be >= 0")
     private BigDecimal maxSalary;
 
-    @Column(name = "is_active")
+//    @Column(name = "is_active")
     private Boolean isActive = false;
 }

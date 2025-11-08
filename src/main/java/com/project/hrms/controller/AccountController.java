@@ -5,7 +5,7 @@ import com.project.hrms.dto.ChangePasswordRequest;
 import com.project.hrms.model.Account;
 import com.project.hrms.response.AccountListResponse;
 import com.project.hrms.response.AccountResponse;
-import com.project.hrms.response.MessageResponse;
+import com.project.hrms.response.ApiResponse;
 import com.project.hrms.service.IAccountService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -13,7 +13,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
-import org.springframework.http.HttpStatus;
+//import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
@@ -23,6 +23,8 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
+
+import static org.springframework.http.HttpStatus.*;
 
 @RestController
 @RequestMapping("/api/v1/accounts")
@@ -45,10 +47,10 @@ public class AccountController {
                     .stream()
                     .map(FieldError::getDefaultMessage)
                     .toList();
-            return ResponseEntity.badRequest().body(errorMessages);
+            return ResponseEntity.badRequest().body(ApiResponse.fail(BAD_REQUEST, String.join("; ", errorMessages)));
         }
         AccountResponse accountResponse = accountService.update(id, accountDTO);
-        return ResponseEntity.ok(accountResponse);
+        return ResponseEntity.ok(ApiResponse.success("Cập nhật tài khoản thành công", accountResponse));
 
     }
 
@@ -56,14 +58,15 @@ public class AccountController {
     //@PreAuthorize("hasRole('ADMIN')")  // Comment lại để bỏ qua xác thực token
     public ResponseEntity<?> deleteAccount(@PathVariable Long id) {
         accountService.delete(id);
-        return ResponseEntity.noContent().build();
+        return ResponseEntity.ok(ApiResponse.success("Xóa tài khoản thành công", null));
+//        return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/{id}")
     //@PreAuthorize("hasAnyRole('ADMIN', 'USER')")  // Comment lại để bỏ qua xác thực token
-    public ResponseEntity<Account> getAccountById(@PathVariable Long id) {
+    public ResponseEntity<?> getAccountById(@PathVariable Long id) {
         Account account = accountService.getById(id);
-        return ResponseEntity.ok(account);
+        return ResponseEntity.ok(ApiResponse.success("Lấy tài khoản thành công", AccountResponse.fromAccount(account)));
     }
 
     @GetMapping
@@ -75,14 +78,14 @@ public class AccountController {
         PageRequest pageRequest = PageRequest.of(page, limit,
                 Sort.by("createdAt").descending());
         //lay danh sach tat ca tai khoan da chia trang
-        Page<AccountResponse> accountResponsePage = accountService.getAllPaged(pageRequest);
-        int totalPages = accountResponsePage.getTotalPages();
-        List<AccountResponse> accounts = accountResponsePage.getContent();
-        //cach 1
-        return ResponseEntity.ok(AccountListResponse.builder()
-                .accounts(accounts)
-                .totalPages(totalPages)
-                .build());
+        Page<AccountResponse> accountResponsePage =  accountService.getAllPaged(pageRequest);
+
+        AccountListResponse listResponse = AccountListResponse.builder()
+                .accounts(accountResponsePage.getContent())
+                .totalPages(accountResponsePage.getTotalPages())
+                .totalElements(accountResponsePage.getTotalElements())
+                .build();
+        return ResponseEntity.ok(ApiResponse.success("Lấy danh sách tài khoản thành công", listResponse));
     }
 
     @GetMapping("/search")
@@ -94,11 +97,13 @@ public class AccountController {
         PageRequest pageRequest = PageRequest.of(page, limit);
         Page<AccountResponse> results = accountService.searchAccounts(keyword, pageRequest);
 
-        //cach 2
-        return ResponseEntity.ok(AccountListResponse.builder()
+        AccountListResponse listResponse = AccountListResponse.builder()
                 .accounts(results.getContent())
                 .totalPages(results.getTotalPages())
-                .build());
+                .totalElements(results.getTotalElements())
+                .build();
+
+        return ResponseEntity.ok(ApiResponse.success("Tìm kiếm tài khoản thành công", listResponse));
     }
 
     @GetMapping("/check-username")
@@ -122,26 +127,26 @@ public class AccountController {
     // ✅ User đổi mật khẩu của chính mình. Đang loi vu token
     @PostMapping("/change-password")
     @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
-    public ResponseEntity<MessageResponse> changePassword(
+    public ResponseEntity<?> changePassword(
             @RequestBody ChangePasswordRequest request,
             Authentication authentication) {
 
         if (!request.getNewPassword().equals(request.getConfirmPassword())) {
             return ResponseEntity.badRequest()
-                    .body(new MessageResponse("New password and confirmation do not match"));
+                    .body(ApiResponse.fail(BAD_REQUEST,
+                            "Mật khẩu xác nhận không khớp"));
         }
         // Lấy username hiện tại từ token đăng nhập
         String username = authentication.getName();
 
         accountService.changePassword(username, request.getOldPassword(), request.getNewPassword());
-        return ResponseEntity.ok(new MessageResponse("Password changed successfully"));
+        return ResponseEntity.ok(ApiResponse.success("Đổi mật khẩu thành công", null));
     }
 
     @PostMapping("/{id}/reset-password")
 //    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Void> resetPassword(@PathVariable Long id) {
+    public ResponseEntity<?> resetPassword(@PathVariable Long id) {
         accountService.resetPassword(id);
-        return ResponseEntity.ok().build();
+        return ResponseEntity.ok(ApiResponse.success("Đặt lại mật khẩu mặc định thành công", null));
     }
-
 }

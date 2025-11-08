@@ -22,9 +22,9 @@ public class JobPositionDTO {
     private String description;
     private String level;
 
-    @JsonProperty("min_salary")
+//    @JsonProperty("min_salary")
     private BigDecimal minSalary;
 
-    @JsonProperty("max_salary")
+//    @JsonProperty("max_salary")
     private BigDecimal maxSalary;
 }

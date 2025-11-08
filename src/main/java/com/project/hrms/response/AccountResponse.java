@@ -11,29 +11,29 @@ import java.time.LocalDateTime;
 @Builder
 public class AccountResponse {
 
-    @JsonProperty("account_id")
+//    @JsonProperty("account_id")
     private Long accountId;
 
     private String username;
 
     private String email;
 
-    @JsonProperty("phone_number")
+//    @JsonProperty("phone_number")
     private String phoneNumber;
 
-    @JsonProperty("is_active")
+//    @JsonProperty("is_active")
     private Boolean isActive;
 
-    @JsonProperty("role_name")
+//    @JsonProperty("role_name")
     private String roleName;
 
-    @JsonProperty("employee_name")
+//    @JsonProperty("employee_name")
     private String employeeName;
 
-    @JsonProperty("created_at")
+//    @JsonProperty("created_at")
     private LocalDateTime createdAt;
 
-    @JsonProperty("updated_at")
+//    @JsonProperty("updated_at")
     private LocalDateTime updatedAt;
 
     /**
