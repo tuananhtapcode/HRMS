@@ -15,10 +15,10 @@ public class Department extends BaseEntity {
     @Column(name = "department_id")
     private Long departmentId;
 
-    @Column(nullable = false, unique = true)
+    @Column(nullable = false, unique = true, length = 20)
     private String code;
 
-    @Column(nullable = false)
+    @Column(nullable = false, unique = true)
     private String name;
 
     private String description;
@@ -26,4 +26,6 @@ public class Department extends BaseEntity {
     @ManyToOne
     @JoinColumn(name = "manager_id")
     private Employee manager;
+
+    private Boolean isActive = true;
 }

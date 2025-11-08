@@ -1,6 +1,9 @@
 package com.project.hrms.response;
 
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.util.List;
 
@@ -8,8 +11,8 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class AccountListResponse {
-    private List<AccountResponse> accounts;
+public class JobPositionListResponse {
+    private List<JobPositionResponse> jobPositionResponses;
     private int totalPages;
     private long totalElements; // tổng số bản ghi (nếu cần)
 }

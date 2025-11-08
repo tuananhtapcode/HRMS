@@ -32,7 +32,7 @@ public class Account extends BaseEntity {
     @JoinColumn(name = "role_id")
     private Role role;
 
-    @ManyToOne
+    @OneToOne
     @JoinColumn(name = "employee_id")
     private Employee employee;
 }

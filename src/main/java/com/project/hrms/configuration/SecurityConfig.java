@@ -3,6 +3,7 @@ package com.project.hrms.configuration;
 import com.project.hrms.repository.AccountRepository;
 import com.project.hrms.security.JwtAuthenticationFilter;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -12,6 +13,7 @@ import org.springframework.security.config.annotation.authentication.configurati
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configuration.WebSecurityCustomizer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -48,6 +50,19 @@ public class SecurityConfig {
         // Lấy AuthenticationManager từ Spring
         return config.getAuthenticationManager();
     }
+
+    //dùng bỏ qua authen cho tất cả các endpoint
+    @Value("${security.disabled:true}")
+    private boolean securityDisabled;
+
+    @Bean
+    public WebSecurityCustomizer webSecurityCustomizer() {
+        if (securityDisabled) {
+            return (web) -> web.ignoring().requestMatchers("/**");
+        }
+        return (web) -> {}; // Không ignore gì cả
+    }
+
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {

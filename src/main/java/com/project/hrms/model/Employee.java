@@ -61,4 +61,8 @@ public class Employee extends BaseEntity {
 
     public enum Gender { Male, Female, Other }
     public enum EmployeeStatus { Active, OnLeave, Resigned, Terminated }
+
+    // ✅ Liên kết 1–1 với Account
+    @OneToOne(mappedBy = "employee", cascade = CascadeType.ALL)
+    private Account account;
 }

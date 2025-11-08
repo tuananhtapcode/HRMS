@@ -31,4 +31,20 @@ public interface AccountRepository extends JpaRepository<Account, Long> {
             "WHERE LOWER(a.username) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
             "   OR LOWER(a.email) LIKE LOWER(CONCAT('%', :keyword, '%'))")
     Page<Account> searchAccounts(@Param("keyword") String keyword, Pageable pageable);
+
+    /**
+     * Find account by username or email
+     * @param username username to search
+     * @param email email to search
+     * @return Optional<Account>
+     */
+    @Query("""
+            SELECT a FROM Account a 
+            WHERE a.username = :username 
+            OR a.email = :email
+            """)
+    Optional<Account> findByUsernameOrEmail(
+            @Param("username") String username,
+            @Param("email") String email
+    );
 }

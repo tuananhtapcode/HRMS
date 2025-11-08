@@ -21,6 +21,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -44,6 +45,7 @@ public class AccountService implements IAccountService {
                 skip(destination.getAccountId());        // Không map ID vì đây là trường tự sinh
                 skip(destination.getRole());            // Role sẽ được set thủ công sau
                 skip(destination.getEmployee());        // Employee sẽ được set thủ công sau
+                skip(destination.getPassword());
                 skip(destination.getCreatedAt());       // Các trường thời gian hệ thống tự xử lý
                 skip(destination.getUpdatedAt());
 
@@ -64,6 +66,7 @@ public class AccountService implements IAccountService {
     }
 
     @Override
+    @Transactional
     public Account create(AccountDTO accountDTO) {
         if (existsByUsername(accountDTO.getUsername())) {
             throw new RuntimeException("Username already exists");
@@ -78,6 +81,10 @@ public class AccountService implements IAccountService {
         Employee employee = employeeRepository.findById(accountDTO.getEmployeeId())
                 .orElseThrow(() -> new DataNotFoundException("Employee not found with id: " + accountDTO.getEmployeeId()));
 
+        if (accountRepository.existsByEmployee(employee)) {
+            throw new DataAlreadyExistsException("Employee already has an account");
+        }
+
         Account account = modelMapper.map(accountDTO, Account.class);
 
         if (accountDTO.getPassword() != null) {
@@ -86,10 +93,6 @@ public class AccountService implements IAccountService {
         account.setRole(role);
         account.setEmployee(employee);
         account.setIsActive(true);
-
-        if (accountRepository.existsByEmployee(employee)) {
-            throw new DataAlreadyExistsException("Employee already has an account");
-        }
 
         return accountRepository.save(account);
     }
@@ -133,16 +136,19 @@ public class AccountService implements IAccountService {
     }
 
     @Override
+    @Transactional()
     public void delete(Long id) {
         Account account = getById(id);
         if (!account.getIsActive()) {
-            throw new IllegalStateException("Account is already inactive");
+            throw new InvalidParamException("Account is already inactive");
         }
         account.setIsActive(false);
+        accountRepository.save(account);
         // Trả về account đã bị xóa (nếu cần). Controller hiện tại trả 204 No Content nên có thể bỏ qua giá trị trả về.
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Page<AccountResponse> searchAccounts(String keyword, PageRequest pageRequest) {
         if (keyword == null || keyword.trim().isEmpty()) {
             // Nếu không nhập gì, có thể trả toàn bộ account (hoặc ném lỗi tuỳ yêu cầu)
@@ -154,17 +160,16 @@ public class AccountService implements IAccountService {
         return accounts.map(AccountResponse::fromAccount);
     }
 
-
     @Override
     public Page<AccountResponse> getAllPaged(PageRequest pageRequest) {
         return accountRepository.findAll(pageRequest).map(AccountResponse::fromAccount);
     }
 
-
     @Override
+    @Transactional(readOnly = true)
     public Account getById(Long id) {
-        return accountRepository.findById(id)
-                .orElseThrow(() -> new DataNotFoundException("Account not found with id: " + id));
+        return accountRepository.findById(id).
+                orElseThrow(() -> new DataNotFoundException("Account not found with id: " + id));
     }
 
     @Override
@@ -191,13 +196,14 @@ public class AccountService implements IAccountService {
 
     //thay doi mk sau khi login
     @Override
+    @Transactional()
     public Account changePassword(String username, String oldPassword, String newPassword) {
         Account account = accountRepository.findByUsername(username)
                 .orElseThrow(() -> new DataNotFoundException("Account not found with username: " + username));
 
         // ✅ Kiểm tra rỗng/null để tránh NullPointerException
         if (oldPassword == null || newPassword == null || newPassword.isBlank()) {
-            throw new IllegalArgumentException("Old or new password cannot be null or empty");
+            throw new InvalidParamException("Old or new password cannot be null or empty");
         }
 
         // ✅ Kiểm tra mật khẩu cũ (đã mã hoá)
@@ -215,13 +221,13 @@ public class AccountService implements IAccountService {
         Account account = accountRepository.findById(accountId)
                 .orElseThrow(() -> new DataNotFoundException("Account not found with id: " + accountId));
 
-        // ✅ Dùng mật khẩu mặc định hoặc có thể random sau này
-        String defaultPassword = "123456";
+        // Đặt lại mật khẩu mặc định (hoặc random)
+        String defaultPassword = "123456"; // có thể thay bằng random generator và gửi email qua EmailService.
+//        String defaultPassword = RandomStringUtils.randomAlphanumeric(8);
 
-        // ✅ Mã hoá mật khẩu mặc định trước khi lưu
         account.setPassword(passwordEncoder.encode(defaultPassword));
 
-        // (Optional) Gửi email thông báo
+        // Có thể thêm logic gửi email thông báo cho nhân viên
         // emailService.sendResetPasswordNotification(account.getEmail(), defaultPassword);
 
         return accountRepository.save(account);
