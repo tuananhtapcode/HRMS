@@ -89,15 +89,13 @@ public class DepartmentController {
                 .toList());
     }
 
-    @GetMapping("/manager/{managerId}")
-    public ResponseEntity<List<DepartmentResponse>> getDepartmentsByManager(@PathVariable Long managerId) {
-        List<Department> departments = departmentService.findByManager_EmployeeId(managerId);
-
-        List<DepartmentResponse> responseList = departments.stream()
-                .map(DepartmentResponse::fromDepartment)
-                .toList();
-
-        return ResponseEntity.ok(responseList);
-    }
+//    @GetMapping("/manager/{managerId}")
+//    public ResponseEntity<DepartmentResponse> getDepartmentsByManager(@PathVariable Long managerId) {
+//        Department departments = departmentService.findByManager_EmployeeId(managerId);
+//
+//        DepartmentResponse response = . (DepartmentResponse::fromDepartment);
+//
+//        return ResponseEntity.ok(response);
+//    }
 
 }

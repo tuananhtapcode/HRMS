@@ -44,6 +44,7 @@ public class JobPositionService implements IJobPositionService {
         if (jobPositionRepository.existsByCode(jobPositionDTO.getCode())) {
             throw new DataAlreadyExistsException("Mã chức danh đã tồn tại: " + jobPositionDTO.getCode());
         }
+
         if (jobPositionRepository.existsByName(jobPositionDTO.getName())) {
             throw new DataAlreadyExistsException("Job position name already exists");
         }

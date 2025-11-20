@@ -21,6 +21,6 @@ public interface IDepartmentService {
 
     List<Department> searchByName(String name);
 
-    List<Department> findByManager_EmployeeId(Long managerId);
+    Department findByManager_EmployeeId(Long managerId);
 
 }

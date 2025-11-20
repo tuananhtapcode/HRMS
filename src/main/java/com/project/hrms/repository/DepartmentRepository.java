@@ -8,7 +8,7 @@ import java.util.List;
 import java.util.Optional;
 
 public interface DepartmentRepository extends JpaRepository<Department, Long> {
-    List<Department> findByManager_EmployeeId(Long managerId);
+    Department findByManager_EmployeeId(Long managerId);
 
     // ✅ lấy mã lớn nhất hiện có, ví dụ: D005
     Optional<Department> findTopByOrderByCodeDesc();

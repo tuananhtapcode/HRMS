@@ -25,11 +25,15 @@ public class CustomUserDetailsService implements UserDetailsService {
                 .orElseThrow(() ->
                         new UsernameNotFoundException("User not found with username: " + username));
 
-        // 2. Lấy quyền (Role) của account
-        // Giả sử model Account của bạn có getRole() trả về model Role có getName()
+        // 2. Kiểm tra account có active hay không
+        if (Boolean.FALSE.equals(account.getIsActive())) {
+            throw new UsernameNotFoundException("Account is deactivated: " + username);
+        }
+
+        // 3. Lấy quyền (Role) của account
         String roleName = "ROLE_" + account.getRole().getCode().toUpperCase();
 
-        // 3. Chuyển đổi Account -> UserDetails của Spring
+        // 4. Trả về UserDetails của Spring Security
         return new User(
                 account.getUsername(),
                 account.getPassword(),

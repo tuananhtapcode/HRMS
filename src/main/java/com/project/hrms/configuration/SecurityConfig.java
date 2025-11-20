@@ -2,6 +2,7 @@ package com.project.hrms.configuration;
 
 import com.project.hrms.repository.AccountRepository;
 import com.project.hrms.security.JwtAuthenticationFilter;
+import com.project.hrms.service.CustomUserDetailsService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -23,11 +24,11 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 
 @Configuration
 @EnableWebSecurity
-@EnableMethodSecurity
+//@EnableMethodSecurity
 @RequiredArgsConstructor
 public class SecurityConfig {
 
-//    private final CustomUserDetailsService customUserDetailsService;
+    private final CustomUserDetailsService customUserDetailsService;
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
 
 
@@ -62,7 +63,6 @@ public class SecurityConfig {
         }
         return (web) -> {}; // Không ignore gì cả
     }
-
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {

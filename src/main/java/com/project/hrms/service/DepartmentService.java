@@ -113,7 +113,8 @@ public class DepartmentService implements IDepartmentService {
     }
 
     @Override
-    public List<Department> findByManager_EmployeeId(Long managerId) {
+    public Department findByManager_EmployeeId(Long managerId) {
         return departmentRepository.findByManager_EmployeeId(managerId);
+//        return null;
     }
 }

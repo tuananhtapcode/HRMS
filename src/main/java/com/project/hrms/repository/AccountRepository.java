@@ -25,6 +25,7 @@ public interface AccountRepository extends JpaRepository<Account, Long> {
     Boolean existsByEmployee(Employee employee);
 
     Page<Account> findAll(Pageable pageable);
+
     Optional<Account> findByActivationToken(String token);
 
     // ✅ Tìm theo username hoặc email (có chứa, không phân biệt hoa thường)

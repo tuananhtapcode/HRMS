@@ -2,6 +2,8 @@ package com.project.hrms.dto;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.project.hrms.model.enums.EmployeeStatus;
+import com.project.hrms.model.enums.Gender;
 import jakarta.validation.constraints.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -16,34 +18,32 @@ import java.time.LocalDate;
 public class EmployeeDTO {
     private Long employeeId;
 
-    @NotBlank(message = "Họ không được để trống")
+    private String employeeCode;
+
+    @NotBlank(message = "Họ và tên không được để trống")
     private String fullName;
 
-    private String gender;
+    private Gender gender;
 
-    //    @JsonFormat(pattern = "yyyy-MM-dd")
+    @JsonFormat(pattern = "dd-MM-yyyy")
     private LocalDate dateOfBirth;
 
-    //    @Email(message = "Email không hợp lệ")
-//    @NotBlank(message = "Email không được để trống")
+    @NotBlank(message = "Email không được để trống")
+    @Email(message = "Email không hợp lệ")
     private String email;
 
-    //    @Pattern(regexp = "^(\\+84|0)[0-9]{9,10}$", message = "Số điện thoại không hợp lệ")
-    @JsonProperty("phone_number")
+    @Pattern(regexp = "^\\d{10}$", message = "Phone number must be 10 digits")
+//    @Pattern(regexp = "^(\\+84|0)[0-9]{9,10}$", message = "Số điện thoại không hợp lệ")
     private String phoneNumber;
 
-
-    @JsonProperty("hire_date")
-//    @JsonFormat(pattern = "yyyy-MM-dd")
+    @JsonFormat(pattern = "dd-MM-yyyy")
     private LocalDate hireDate;
 
-    @JsonProperty("department_id")
+
     private Long departmentId;
 
-    @JsonProperty("job_position_id")
     private Long jobPositionId;
 
-    @JsonProperty("bank_name")
     private String bankName;
 
     private String bankAccount;
@@ -52,5 +52,5 @@ public class EmployeeDTO {
 
     private String address;
 
-    private String status;
+    private EmployeeStatus status;
 }

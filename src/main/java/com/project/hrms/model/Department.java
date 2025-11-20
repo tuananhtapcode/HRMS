@@ -23,7 +23,7 @@ public class Department extends BaseEntity {
 
     private String description;
 
-    @ManyToOne
+    @OneToOne
     @JoinColumn(name = "manager_id")
     private Employee manager;
 

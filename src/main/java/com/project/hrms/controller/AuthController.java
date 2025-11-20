@@ -4,7 +4,7 @@ import com.project.hrms.dto.ActivateAccountDTO;
 import com.project.hrms.dto.LoginRequestDTO;
 import com.project.hrms.dto.LoginResponseDTO;
 import com.project.hrms.dto.RegisterRequestDTO;
-import com.project.hrms.response.MessageResponse;
+import com.project.hrms.response.ApiResponse;
 import com.project.hrms.security.JwtTokenProvider;
 import com.project.hrms.service.AuthService;
 import jakarta.validation.Valid;
@@ -32,6 +32,7 @@ public class AuthController {
     private final AuthService authService;
     private final JwtTokenProvider tokenProvider;
 
+    //t nghĩ nên cos Refresh JWT
     @PostMapping("/login")
     public ResponseEntity<?> login(@Valid @RequestBody LoginRequestDTO loginRequest,
                                    BindingResult bindingResult) {
@@ -76,7 +77,7 @@ public class AuthController {
         }
 
         authService.activateAccount(dto);
-        return ResponseEntity.ok(new MessageResponse("Kích hoạt tài khoản thành công!"));
+        return ResponseEntity.ok(ApiResponse.success("Kích hoạt tài khoản thành công!", dto));
     }
 
     @PostMapping("/register")

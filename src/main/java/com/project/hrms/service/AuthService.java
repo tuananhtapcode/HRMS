@@ -51,19 +51,20 @@ public class AuthService {
         // 5. Lưu vào database
         return accountRepository.save(account);
     }
-public void activateAccount(ActivateAccountDTO dto) {
-    Account account = accountRepository.findByActivationToken(dto.getToken())
-            .orElseThrow(() -> new DataNotFoundException("Token không hợp lệ hoặc đã được sử dụng."));
 
-    if (account.getActivationTokenExpires().isBefore(LocalDateTime.now())) {
-        throw new InvalidParamException("Token đã hết hạn.");
+    public void activateAccount(ActivateAccountDTO dto) {
+        Account account = accountRepository.findByActivationToken(dto.getToken())
+                .orElseThrow(() -> new DataNotFoundException("Token không hợp lệ hoặc đã được sử dụng."));
+
+        if (account.getActivationTokenExpires().isBefore(LocalDateTime.now())) {
+            throw new InvalidParamException("Token đã hết hạn, vui lòng liên hệ HR để cấp lại.");
+        }
+
+        account.setIsActive(true);
+        account.setPassword(passwordEncoder.encode(dto.getNewPassword()));
+        account.setActivationToken(null);
+        account.setActivationTokenExpires(null);
+
+        accountRepository.save(account);
     }
-
-    account.setIsActive(true);
-    account.setPassword(passwordEncoder.encode(dto.getNewPassword()));
-    account.setActivationToken(null);
-    account.setActivationTokenExpires(null);
-
-    accountRepository.save(account);
-}
 }
