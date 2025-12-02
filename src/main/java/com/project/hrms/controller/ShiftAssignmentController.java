@@ -1,6 +1,7 @@
 // src/main/java/com/project/hrms/controller/ShiftAssignmentController.java
 package com.project.hrms.controller;
 
+import com.project.hrms.dto.BulkAssignDTO;
 import com.project.hrms.dto.ShiftAssignmentDTO;
 import com.project.hrms.service.ShiftAssignmentService;
 import jakarta.validation.Valid;
@@ -30,6 +31,7 @@ public class ShiftAssignmentController {
 
     // API Lấy lịch làm việc của nhân viên (theo tháng)
     @GetMapping("/employee/{employeeId}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER') or @securityService.isOwner(authentication, #employeeId)")
     public ResponseEntity<List<ShiftAssignmentDTO>> getAssignments(
             @PathVariable Long employeeId,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
@@ -43,4 +45,16 @@ public class ShiftAssignmentController {
         assignmentService.deleteAssignment(id);
         return ResponseEntity.ok("Xóa phân ca thành công.");
     }
+    // --- API MỚI CHO PHÂN CA HÀNG LOẠT ---
+    @PostMapping("/bulk-by-department")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
+    public ResponseEntity<?> bulkAssignByDepartment(@Valid @RequestBody BulkAssignDTO dto) {
+
+        if (dto.getStartDate().isAfter(dto.getEndDate())) {
+            return ResponseEntity.badRequest().body("Ngày bắt đầu không thể sau ngày kết thúc.");
+        } assignmentService.bulkAssignByDepartment(dto);
+
+        return ResponseEntity.ok("Phân ca hàng loạt cho phòng ban thành công.");
+    }
+
 }
