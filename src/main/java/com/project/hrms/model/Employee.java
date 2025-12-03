@@ -42,7 +42,6 @@ public class Employee extends BaseEntity {
     private String phoneNumber;
 
     @Column(name = "hire_date", nullable = false)
-    @NotNull(message = "Ngày vào làm không được để trống")
     private LocalDate hireDate;
 
     @ManyToOne
