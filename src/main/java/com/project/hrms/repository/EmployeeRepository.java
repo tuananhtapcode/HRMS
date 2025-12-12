@@ -39,6 +39,7 @@ public interface EmployeeRepository extends JpaRepository<Employee, Long>,
     // Tìm theo trạng thái
     List<Employee> findByStatus(String status);
 
+
 //
 //    // Tìm theo tên chứa
 //    Page<Employee> findByFullNameContainingIgnoreCase(String name, Pageable pageable);

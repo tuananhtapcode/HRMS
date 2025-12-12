@@ -3,9 +3,15 @@ package com.project.hrms.exception;
 import com.project.hrms.response.ApiResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.DisabledException;
+import org.springframework.security.authentication.LockedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.context.request.WebRequest;
 
 import java.time.LocalDateTime;
 
@@ -65,5 +71,32 @@ public class GlobalExceptionHandler {
                 .build();
 
         return ResponseEntity.status(status).body(response);
+    }
+
+    @ExceptionHandler(BadCredentialsException.class)
+    @ResponseStatus(HttpStatus.UNAUTHORIZED)
+    public ApiResponse<Object> handleBadCredentialsException(BadCredentialsException ex) {
+        return ApiResponse.builder()
+                .status(HttpStatus.UNAUTHORIZED.value())
+                .message("Tài khoản hoặc mật khẩu không chính xác")
+                .build();
+    }
+
+    @ExceptionHandler({DisabledException.class, LockedException.class})
+    @ResponseStatus(HttpStatus.UNAUTHORIZED)
+    public ApiResponse<Object> handleAccountStatusException(Exception ex) {
+        return ApiResponse.builder()
+                .status(HttpStatus.UNAUTHORIZED.value())
+                .message("Tài khoản đã bị khóa hoặc vô hiệu hóa")
+                .build();
+    }
+
+    @ExceptionHandler(AccessDeniedException.class)
+    @ResponseStatus(HttpStatus.FORBIDDEN)
+    public ApiResponse<Object> handleAccessDeniedException(AccessDeniedException ex) {
+        return ApiResponse.builder()
+                .status(HttpStatus.FORBIDDEN.value())
+                .message("Bạn không có quyền truy cập tài nguyên này")
+                .build();
     }
 }

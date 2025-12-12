@@ -23,6 +23,8 @@ public class JobPositionResponse {
     //    @JsonProperty("max_salary")
     private BigDecimal maxSalary;
 
+    private boolean isActive;
+
     public static JobPositionResponse fromJobPosition(JobPosition entity) {
         return JobPositionResponse.builder()
                 .id(entity.getJobPositionId())
@@ -32,6 +34,7 @@ public class JobPositionResponse {
                 .level(entity.getLevel())
                 .minSalary(entity.getMinSalary())
                 .maxSalary(entity.getMaxSalary())
+                .isActive(entity.getIsActive () != null ? entity.getIsActive() : null)
                 .build();
     }
 }

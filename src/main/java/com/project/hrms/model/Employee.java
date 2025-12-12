@@ -29,6 +29,13 @@ public class Employee extends BaseEntity {
     @Enumerated(EnumType.STRING)
     private Gender gender = Gender.OTHER;
 
+    //them
+    public enum EmploymentType { FULLTIME, PARTTIME }
+    @Enumerated(EnumType.STRING)
+    @Column(name = "employment_type")
+    private EmploymentType employmentType;
+
+
     @Column(name = "date_of_birth")
     @Past(message = "Ngày sinh phải là ngày trong quá khứ")
     private LocalDate dateOfBirth;
@@ -42,7 +49,6 @@ public class Employee extends BaseEntity {
     private String phoneNumber;
 
     @Column(name = "hire_date", nullable = false)
-    @NotNull(message = "Ngày vào làm không được để trống")
     private LocalDate hireDate;
 
     @ManyToOne

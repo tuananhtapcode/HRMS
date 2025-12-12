@@ -8,7 +8,10 @@ import com.project.hrms.model.Account;
 import com.project.hrms.model.Role;
 import com.project.hrms.repository.AccountRepository;
 import com.project.hrms.repository.RoleRepository;
+import com.project.hrms.security.model.CustomUserDetails;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -67,4 +70,28 @@ public class AuthService {
 
         accountRepository.save(account);
     }
+
+    public Long getCurrentUserId() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+
+        if (auth == null || !(auth.getPrincipal() instanceof CustomUserDetails)) {
+            throw new IllegalStateException("Không tìm thấy user trong SecurityContext");
+        }
+
+        CustomUserDetails user = (CustomUserDetails) auth.getPrincipal();
+        return user.getUserId();
+    }
+
+    public String getCurrentRole() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        return auth.getAuthorities().iterator().next().getAuthority();
+    }
+
+    public boolean isAdminOrManager() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String role = auth.getAuthorities().iterator().next().getAuthority();
+        return role.equals("ADMIN") || role.equals("MANAGER");
+    }
+
+
 }

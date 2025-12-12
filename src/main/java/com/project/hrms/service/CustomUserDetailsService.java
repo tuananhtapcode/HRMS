@@ -2,6 +2,7 @@ package com.project.hrms.service;
 
 import com.project.hrms.model.Account;
 import com.project.hrms.repository.AccountRepository;
+import com.project.hrms.security.model.CustomUserDetails;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.User;
@@ -34,10 +35,11 @@ public class CustomUserDetailsService implements UserDetailsService {
         String roleName = "ROLE_" + account.getRole().getCode().toUpperCase();
 
         // 4. Trả về UserDetails của Spring Security
-        return new User(
-                account.getUsername(),
-                account.getPassword(),
-                Collections.singleton(new SimpleGrantedAuthority(roleName))
-        );
+//        return new User(
+//                account.getUsername(),
+//                account.getPassword(),
+//                Collections.singleton(new SimpleGrantedAuthority(roleName))
+//        );
+        return new CustomUserDetails(account);
     }
 }

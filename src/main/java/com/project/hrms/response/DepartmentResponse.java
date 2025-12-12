@@ -14,6 +14,7 @@ public class DepartmentResponse {
     private String description;
     private Long managerId;
     private String managerName;
+    private boolean isActive;
     private String createdAt;
     private String updatedAt;
 
@@ -25,6 +26,7 @@ public class DepartmentResponse {
                 .description(department.getDescription())
                 .managerId(department.getManager() != null ? department.getManager().getEmployeeId() : null)
                 .managerName(department.getManager() != null ? department.getManager().getFullName() : null)
+                .isActive(department.getIsActive () != null ? department.getIsActive() : null)
                 .createdAt(department.getCreatedAt() != null ? department.getCreatedAt().toString() : null)
                 .updatedAt(department.getUpdatedAt() != null ? department.getUpdatedAt().toString() : null)
                 .build();

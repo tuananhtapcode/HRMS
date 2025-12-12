@@ -37,40 +37,24 @@ public class DepartmentService implements IDepartmentService {
     @Override
     @Transactional
     public Department create(DepartmentDTO newDepartmentDTO) {
+        // Kiểm tra trùng tên
         if (departmentRepository.existsByName(newDepartmentDTO.getName())) {
             throw new DataAlreadyExistsException("Department name already exists");
         }
+
+        // Kiểm tra trùng code
+        if (departmentRepository.existsByCode(newDepartmentDTO.getCode())) {
+            throw new DataAlreadyExistsException("Department code already exists");
+        }
+
         Department department = modelMapper.map(newDepartmentDTO, Department.class);
 
-        String newCode = generateNextCode();
-        department.setCode(newCode);
-
+        // Set manager nếu có
         if (newDepartmentDTO.getManagerId() != null) {
             employeeRepository.findById(newDepartmentDTO.getManagerId())
                     .ifPresent(department::setManager);
         }
         return departmentRepository.save(department);
-    }
-
-    //Sinh code mới dạng D001, D002, ...
-    private String generateNextCode() {
-        Long nextNumber = 1L;
-
-        // Lấy phòng ban có code lớn nhất
-        var lastDepartmentOpt = departmentRepository.findTopByOrderByCodeDesc();
-        if (lastDepartmentOpt.isPresent()) {
-            String lastCode = lastDepartmentOpt.get().getCode(); // D0001
-            try {
-                long currentNumber = Long.parseLong(lastCode.substring(1)); // Bỏ chữ D
-                nextNumber = currentNumber + 1;
-            } catch (NumberFormatException e) {
-                // Nếu code bị lỗi format thì bắt đầu lại từ 1
-                nextNumber = 1L;
-            }
-        }
-
-        // format lại D0001, D0002, ...
-        return String.format("D%04d", nextNumber);
     }
 
     @Override

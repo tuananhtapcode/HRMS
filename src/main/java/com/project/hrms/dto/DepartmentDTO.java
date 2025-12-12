@@ -10,6 +10,8 @@ import lombok.*;
 @AllArgsConstructor
 @Builder
 public class DepartmentDTO{
+    @NotBlank(message = "Mã không được để trống")
+    private String code;
 
     @NotBlank(message = "Tên phòng ban không được để trống")
     @Size(max = 100, message = "Tên phòng ban không được vượt quá 100 ký tự")

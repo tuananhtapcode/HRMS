@@ -233,4 +233,17 @@ public class AccountService implements IAccountService {
         return accountRepository.save(account);
     }
 
+    @Override
+    public void resetPasswordAllAccount() {
+        List<Account> account = accountRepository.findAll();
+
+        // Đặt lại mật khẩu mặc định (hoặc random)
+        String defaultPassword = "123456"; // có thể thay bằng random generator và gửi email qua EmailService.
+//        String defaultPassword = RandomStringUtils.randomAlphanumeric(8);
+
+        for (Account acc : account) {
+            acc.setPassword(passwordEncoder.encode(defaultPassword));
+            accountRepository.save(acc);
+        }
+    }
 }
