@@ -1,9 +1,10 @@
 package com.project.hrms.model.enums;
 
 public enum AttendanceStatus {
-    Present,
-    Absent,
-    Late,
-    OverTime,
-    OnLeave
+    Present, // Có mặt (Đúng giờ)
+    Late,    // Đi trễ
+    Absent,  // Vắng mặt
+    OnLeave,  // Nghỉ phép
+    OverTime //Tăng ca
+
 }

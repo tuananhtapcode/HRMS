@@ -1,8 +1,9 @@
+// src/main/java/com/project/hrms/model/AttendanceRecord.java
 package com.project.hrms.model;
 
+import com.project.hrms.model.enums.AttendanceStatus;
 import jakarta.persistence.*;
 import lombok.*;
-
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -13,41 +14,45 @@ import java.time.LocalTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Table(name = "attendance_record")
+@Table(name = "attendance_record",
+        uniqueConstraints = {
+                // Một nhân viên chỉ có 1 bản ghi chấm công 1 ngày
+                @UniqueConstraint(columnNames = {"employee_id", "attendance_date"})
+        })
+@Data
 public class AttendanceRecord {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "attendance_record_id")
     private Long attendanceRecordId;
 
-    @Column(name = "employee_id", nullable = false)
-    private Long employeeId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "employee_id", nullable = false)
+    private Employee employee;
 
-    @Column(name = "shift_id")
-    private Long shiftId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "shift_id", nullable = false)
+    private Shift shift; // Ca đã được phân (Kế hoạch)
 
-    @Column(name = "attendance_date", nullable = false)
+    @Column(nullable = false)
     private LocalDate attendanceDate;
 
-    @Column(name = "check_in_time")
-    private LocalDateTime checkInTime;
+    @Column
+    private LocalDateTime checkInTime; // Giờ vào (Thực tế)
 
-    @Column(name = "check_out_time")
-    private LocalDateTime checkOutTime;
+    @Column
+    private LocalDateTime checkOutTime; // Giờ ra (Thực tế)
 
-    @Column(name = "status", length = 20)
-    private String status; // 'Present','Late','Absent','OnLeave'
+    @Enumerated(EnumType.STRING)
+    @Column(columnDefinition = "ENUM('Present','Late','Absent','OnLeave') DEFAULT 'Present'")
+    private AttendanceStatus status;
 
-    @Column(name = "total_work_minutes")
+    @Column(columnDefinition = "INT DEFAULT 0")
     private Integer totalWorkMinutes;
 
-    @Column(name = "overtime_minutes")
-    private Integer overtimeMinutes;
-
-    @Column(name = "late_minutes")
+    @Column(columnDefinition = "INT DEFAULT 0")
     private Integer lateMinutes;
 
-    @Column(name = "note", length = 255)
+    @Column()
     private String note;
 }

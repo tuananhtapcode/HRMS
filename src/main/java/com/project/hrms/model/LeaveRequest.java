@@ -7,6 +7,7 @@ import lombok.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
+@EqualsAndHashCode(callSuper = true)
 @Entity
 @Table(name = "leave_request")
 @NoArgsConstructor
@@ -31,7 +32,7 @@ public class LeaveRequest extends BaseEntity{
     @Column(nullable = false)
     private LocalDate endDate;
 
-    // Lý do
+    @Column(columnDefinition = "TEXT")
     private String reason;
 
     @Enumerated(EnumType.STRING)

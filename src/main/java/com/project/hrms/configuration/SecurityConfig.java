@@ -53,16 +53,16 @@ public class SecurityConfig {
     }
 
     //dùng bỏ qua authen cho tất cả các endpoint
-    @Value("${security.disabled:true}")
-    private boolean securityDisabled;
-
-    @Bean
-    public WebSecurityCustomizer webSecurityCustomizer() {
-        if (securityDisabled) {
-            return (web) -> web.ignoring().requestMatchers("/**");
-        }
-        return (web) -> {}; // Không ignore gì cả
-    }
+//    @Value("${security.disabled:true}")
+//    private boolean securityDisabled;
+//
+//    @Bean
+//    public WebSecurityCustomizer webSecurityCustomizer() {
+//        if (securityDisabled) {
+//            return (web) -> web.ignoring().requestMatchers("/**");
+//        }
+//        return (web) -> {}; // Không ignore gì cả
+//    }
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {

@@ -12,6 +12,7 @@ import java.time.LocalDateTime;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+//@EqualsAndHashCode(callSuper = true)
 @Entity
 @Table(name = "overtime_request")
 public class OvertimeRequest extends BaseEntity{

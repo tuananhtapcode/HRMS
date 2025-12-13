@@ -16,6 +16,13 @@ import java.util.Optional;
 
 @Repository
 public interface OvertimeRequestRepository extends JpaRepository<OvertimeRequest, Long> {
+    // Lấy lịch sử OT của 1 nhân viên
+    List<OvertimeRequest> findByEmployee_EmployeeIdOrderByCreatedAtDesc(Long employeeId);
+
+    // Lấy list OT ĐÃ DUYỆT của 1 nhân viên trong 1 tháng
+    List<OvertimeRequest> findByEmployee_EmployeeIdAndStatusAndDateBetween(
+            Long employeeId, RequestStatus status, LocalDate startDate, LocalDate endDate
+    );
 
     /**
      * Tìm các OT cùng employee, cùng ngày, trạng thái PENDING/APPROVED,

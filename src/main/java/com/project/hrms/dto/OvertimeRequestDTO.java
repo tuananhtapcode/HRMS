@@ -1,5 +1,8 @@
 package com.project.hrms.dto;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
+import com.project.hrms.model.enums.RequestStatus;
+import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -16,7 +19,8 @@ import java.time.LocalTime;
 public class OvertimeRequestDTO {
     private Long employeeId;
 
-    @NotNull
+    @NotNull(message = "Ngày làm thêm không được để trống")
+    @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate date;
 
     @NotNull
