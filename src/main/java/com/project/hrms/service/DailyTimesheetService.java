@@ -44,8 +44,8 @@ public class DailyTimesheetService implements IDailyTimesheetService {
         List<LeaveRequest> leaves = leaveRepo.findApprovedLeaveInMonth(employeeId, date, date);
 
         // Tìm đơn OT đã duyệt cho ngày này
-        List<OvertimeRequest> ots = overtimeRepo.findByEmployee_EmployeeIdAndStatusAndDateBetween(
-                employeeId, RequestStatus.Approved, date, date);
+        List<OvertimeRequest> ots = overtimeRepo.findByEmployeeIdAndStatusAndDateBetween(
+                employeeId, RequestStatus.APPROVED, date, date);
 
         // 3. Logic Tổng hợp (Core Logic)
         double standardDays = 0.0;
@@ -95,7 +95,7 @@ public class DailyTimesheetService implements IDailyTimesheetService {
         // C. Xử lý OT
         if (!ots.isEmpty()) {
             overtimeHours = ots.stream()
-                    .mapToDouble(ot -> ot.getHours().doubleValue())
+                    .mapToDouble(ot -> ot.getTotalHours().doubleValue())
                     .sum();
         }
 

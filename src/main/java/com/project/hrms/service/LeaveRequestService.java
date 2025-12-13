@@ -274,7 +274,7 @@ public class LeaveRequestService implements ILeaveRequestService {
 
         if (oldStatus == RequestStatus.APPROVED) {
             workdayRepository.deleteAll(
-                    workdayRepository.findByEmployeeIdAndDateBetween(
+                    workdayRepository.findByEmployee_EmployeeIdAndDateBetween(
                                     req.getEmployeeId(),
                                     req.getStartDate(),
                                     req.getEndDate()

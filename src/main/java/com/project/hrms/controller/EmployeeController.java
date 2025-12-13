@@ -5,6 +5,9 @@ import com.project.hrms.dto.CreateEmployeeRequestDTO;
 import com.project.hrms.dto.EmployeeDTO;
 import com.project.hrms.dto.EmployeeSearchRequest;
 import com.project.hrms.model.Employee;
+import com.project.hrms.model.enums.EmployeeStatus;
+import com.project.hrms.model.enums.Gender;
+import com.project.hrms.model.enums.Level;
 import com.project.hrms.response.ApiResponse;
 import com.project.hrms.response.EmployeeListResponse;
 import com.project.hrms.response.EmployeeResponse;
@@ -236,4 +239,20 @@ public class EmployeeController {
 
         return new ResponseEntity<>(out.toByteArray(), headers, HttpStatus.OK);
     }
+
+    @GetMapping("/AllGender")
+    public Gender[] getAllGender() {
+        return Gender.values();
+    }
+
+    @GetMapping("/AllEmployeeType")
+    public Employee.EmploymentType[] getAllEmployeeType() {
+        return Employee.EmploymentType.values();
+    }
+
+    @GetMapping("/AllStatus")
+    public EmployeeStatus[] getAllStatus() {
+        return EmployeeStatus.values();
+    }
+
 }

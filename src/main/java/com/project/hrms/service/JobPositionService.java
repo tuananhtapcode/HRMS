@@ -14,11 +14,13 @@ import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.modelmapper.ModelMapper;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import org.springframework.data.domain.Pageable;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.time.LocalDateTime;
@@ -112,14 +114,21 @@ public class JobPositionService implements IJobPositionService {
         return JobPositionResponse.fromJobPosition(job);
     }
 
+//    @Override
+//    public List<JobPosition> getAllActive() {
+//        return jobPositionRepository.findByIsActiveTrue();
+//    }
+
     @Override
-    public List<JobPosition> getAllActive() {
-        return jobPositionRepository.findByIsActiveTrue();
+    public Page<JobPositionResponse> getAllByIsActive(Boolean isActive, Pageable pageable){
+        return jobPositionRepository.findByIsActive(isActive,  pageable).
+                map(JobPositionResponse::fromJobPosition);
     }
 
     @Override
     public Page<JobPositionResponse> getAll(PageRequest pageRequest) {
-        return jobPositionRepository.findAll(pageRequest).map(JobPositionResponse::fromJobPosition);
+        return jobPositionRepository.findAll(pageRequest)
+                .map(JobPositionResponse::fromJobPosition);
 
         //chuyen tu JobPosition sang JobPositionResponse bang cach su dung map cua Page. Tam thoi ko dung
 //        return jobPositionRepository.findAll()
@@ -130,7 +139,8 @@ public class JobPositionService implements IJobPositionService {
 
     @Override
     public Page<JobPositionResponse> search(String keyword, PageRequest pageRequest) {
-        return jobPositionRepository.search(keyword, pageRequest).map(JobPositionResponse::fromJobPosition);
+        return jobPositionRepository.search(keyword, pageRequest)
+                .map(JobPositionResponse::fromJobPosition);
     }
 
     @Override
@@ -154,7 +164,7 @@ public class JobPositionService implements IJobPositionService {
                 row.createCell(1).setCellValue(job.getCode());
                 row.createCell(2).setCellValue(job.getName());
                 row.createCell(3).setCellValue(job.getDescription() != null ? job.getDescription() : "");
-                row.createCell(4).setCellValue(job.getLevel() != null ? job.getLevel() : "");
+                row.createCell(4).setCellValue(job.getLevel() != null ? job.getLevel().name() : "");
                 row.createCell(5).setCellValue(job.getMinSalary() != null ? job.getMinSalary().doubleValue() : 0);
                 row.createCell(6).setCellValue(job.getMaxSalary() != null ? job.getMaxSalary().doubleValue() : 0);
                 row.createCell(7).setCellValue(Boolean.TRUE.equals(job.getIsActive()) ? "Yes" : "No");
@@ -215,11 +225,22 @@ public class JobPositionService implements IJobPositionService {
     }
 
     //code test search advanced
+//    @Override
+//    public List<JobPosition> searchJobPositions(String name, String level, Boolean isActive) {
+//        // Gọi custom repository query (định nghĩa bằng @Query trong JobPositionRepository)
+//        return jobPositionRepository.searchAdvanced(name, level, isActive);
+//    }
+
     @Override
-    public List<JobPosition> searchJobPositions(String name, String level, Boolean isActive) {
-        // Gọi custom repository query (định nghĩa bằng @Query trong JobPositionRepository)
-        return jobPositionRepository.searchAdvanced(name, level, isActive);
+    public Page<JobPositionResponse> searchJobPositions(
+            String name, String level, Boolean isActive, Pageable pageable) {
+
+        Page<JobPosition> page =
+                jobPositionRepository.searchAdvanced(name, level, isActive, pageable);
+
+        return page.map(JobPositionResponse::fromJobPosition);
     }
+
 
     //code test search advanced - cach 2
 //    @Override

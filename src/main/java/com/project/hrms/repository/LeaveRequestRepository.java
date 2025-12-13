@@ -15,7 +15,7 @@ import java.util.List;
 @Repository
 public interface LeaveRequestRepository extends JpaRepository<LeaveRequest, Long> {
     // Lấy lịch sử đơn nghỉ của 1 nhân viên (sắp xếp mới nhất trước)
-    List<LeaveRequest> findByEmployee_EmployeeIdOrderByCreatedAtDesc(Long employeeId);
+    List<LeaveRequest> findByEmployeeIdOrderByCreatedAtDesc(Long employeeId);
 
     // Kiểm tra trùng đơn nghỉ đã APPROVED
     @Query("""

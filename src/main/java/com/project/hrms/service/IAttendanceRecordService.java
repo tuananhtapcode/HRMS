@@ -1,5 +1,7 @@
 package com.project.hrms.service;
 
+import com.project.hrms.response.AttendanceResponse;
+
 import java.time.LocalDate;
 
 public interface IAttendanceRecordService
@@ -26,4 +28,7 @@ public interface IAttendanceRecordService
      * Lấy total_work_minutes (nếu cần dùng).
      */
     int getTotalWorkMinutes(Long employeeId, LocalDate date);
+
+    AttendanceResponse performCheckIn(String username);
+    AttendanceResponse performCheckOut(String username);
 }

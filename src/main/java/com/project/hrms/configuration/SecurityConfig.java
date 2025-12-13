@@ -52,17 +52,17 @@ public class SecurityConfig {
         return config.getAuthenticationManager();
     }
 
-    //dùng bỏ qua authen cho tất cả các endpoint
-//    @Value("${security.disabled:true}")
-//    private boolean securityDisabled;
-//
-//    @Bean
-//    public WebSecurityCustomizer webSecurityCustomizer() {
-//        if (securityDisabled) {
-//            return (web) -> web.ignoring().requestMatchers("/**");
-//        }
-//        return (web) -> {}; // Không ignore gì cả
-//    }
+//    dùng bỏ qua authen cho tất cả các endpoint
+    @Value("${security.disabled:true}")
+    private boolean securityDisabled;
+
+    @Bean
+    public WebSecurityCustomizer webSecurityCustomizer() {
+        if (securityDisabled) {
+            return (web) -> web.ignoring().requestMatchers("/**");
+        }
+        return (web) -> {}; // Không ignore gì cả
+    }
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {

@@ -5,6 +5,7 @@ import com.project.hrms.model.JobPosition;
 import com.project.hrms.response.JobPositionResponse;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
 import java.io.ByteArrayInputStream;
 import java.util.List;
@@ -28,7 +29,8 @@ public interface IJobPositionService {
     ByteArrayInputStream exportToExcel(); // Export danh sách ra Excel
 
 
-    List<JobPosition> getAllActive();
+
+    Page<JobPositionResponse> getAllByIsActive(Boolean isActive, Pageable pageable);
 
     Optional<JobPosition> getByCode(String code);
 
@@ -52,5 +54,13 @@ public interface IJobPositionService {
      * @param isActive Trạng thái hoạt động (có thể là null để tìm cả hai).
      * @return Danh sách các vị trí công việc thỏa mãn tiêu chí.
      */
-    List<JobPosition> searchJobPositions(String name, String level, Boolean isActive);
+//    List<JobPosition> searchJobPositions(String name, String level, Boolean isActive);
+
+    Page<JobPositionResponse> searchJobPositions(
+            String name,
+            String level,
+            Boolean isActive,
+            Pageable pageable
+    );
+
 }

@@ -3,7 +3,7 @@ package com.project.hrms.controller;
 
 import com.project.hrms.response.ApiResponse;
 import com.project.hrms.response.AttendanceResponse;
-import com.project.hrms.service.IAttendanceService;
+import com.project.hrms.service.IAttendanceRecordService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -19,7 +19,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class AttendanceController {
 
     // Inject Interface thay vì Class cụ thể
-    private final IAttendanceService attendanceService;
+    private final IAttendanceRecordService attendanceService;
 
     @PostMapping("/check-in")
     public ResponseEntity<?> checkIn(Authentication authentication) {

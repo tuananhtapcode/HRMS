@@ -1,5 +1,6 @@
 package com.project.hrms.model;
 
+import com.project.hrms.model.enums.Level;
 import jakarta.persistence.*;
 import lombok.*;
 import org.springframework.beans.factory.annotation.Value;
@@ -26,7 +27,9 @@ public class JobPosition extends BaseEntity {
     private String name;
 
     private String description;
-    private String level;
+
+    @Enumerated(EnumType.STRING)
+    private Level level;
 
 //    @Column(name = "min_salary")
     @Min(value = 0, message = "Salary must be >= 0")

@@ -2,6 +2,7 @@ package com.project.hrms.controller;
 
 import com.project.hrms.dto.JobPositionDTO;
 import com.project.hrms.model.JobPosition;
+import com.project.hrms.model.enums.Level;
 import com.project.hrms.response.*;
 import com.project.hrms.service.IJobPositionService;
 import jakarta.validation.Valid;
@@ -103,14 +104,66 @@ public class JobPositionController {
     public ResponseEntity<?> search(
             @RequestParam(required = false) String name,
             @RequestParam(required = false) String level,
-            @RequestParam(required = false) Boolean isActive
+            @RequestParam(required = false) Boolean isActive,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int limit
     ) {
-        List<JobPosition> result = jobPositionService.searchJobPositions(name, level, isActive);
-        List<JobPositionResponse> responseList = result.stream()
-                .map(JobPositionResponse::fromJobPosition)
-                .toList();
-        return ResponseEntity.ok(ApiResponse.success("Search job positions successfully", responseList));
+        PageRequest pageRequest = PageRequest.of(
+                page, limit, Sort.by("createdAt").descending()
+        );
+
+        Page<JobPositionResponse> pageResult =
+                jobPositionService.searchJobPositions(name, level, isActive, pageRequest);
+
+        JobPositionListResponse response = JobPositionListResponse.builder()
+                .jobPositionResponses(pageResult.getContent())
+                .totalPages(pageResult.getTotalPages())
+                .totalElements(pageResult.getTotalElements())
+                .build();
+
+        return ResponseEntity.ok(ApiResponse.success("Search job positions successfully", response));
     }
+
+    @GetMapping("/active")
+    public ResponseEntity<?> getAllActive(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int limit
+    ) {
+        PageRequest pageRequest = PageRequest.of(page, limit,
+                Sort.by("createdAt").descending());
+
+        Page<JobPositionResponse> pageResult =
+                jobPositionService.getAllByIsActive(true, pageRequest);
+
+        JobPositionListResponse response = JobPositionListResponse.builder()
+                .jobPositionResponses(pageResult.getContent())
+                .totalPages(pageResult.getTotalPages())
+                .totalElements(pageResult.getTotalElements())
+                .build();
+
+        return ResponseEntity.ok(ApiResponse.success("List active job positions", response));
+    }
+
+    @GetMapping("/inactive")
+    public ResponseEntity<?> getAllInactive(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int limit
+    ) {
+        PageRequest pageRequest = PageRequest.of(page, limit,
+                Sort.by("createdAt").descending());
+
+        Page<JobPositionResponse> pageResult =
+                jobPositionService.getAllByIsActive(false, pageRequest);
+
+        JobPositionListResponse response = JobPositionListResponse.builder()
+                .jobPositionResponses(pageResult.getContent())
+                .totalPages(pageResult.getTotalPages())
+                .totalElements(pageResult.getTotalElements())
+                .build();
+
+        return ResponseEntity.ok(ApiResponse.success("List inactive job positions", response));
+    }
+
 
     // Kích hoạt / hủy kích hoạt
     @PutMapping("/{id}/activate")
@@ -123,5 +176,10 @@ public class JobPositionController {
     public ResponseEntity<?> deactivate(@PathVariable Long id) {
         boolean success = jobPositionService.deactivateJobPosition(id);
         return ResponseEntity.ok(ApiResponse.success("Deactivated job position successfully", success));
+    }
+
+    @GetMapping("/AllLevels")
+    public Level[] getAllLevels() {
+        return Level.values();
     }
 }

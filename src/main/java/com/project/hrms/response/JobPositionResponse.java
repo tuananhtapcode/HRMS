@@ -31,7 +31,7 @@ public class JobPositionResponse {
                 .code(entity.getCode())
                 .name(entity.getName())
                 .description(entity.getDescription())
-                .level(entity.getLevel())
+                .level(entity.getLevel().name())
                 .minSalary(entity.getMinSalary())
                 .maxSalary(entity.getMaxSalary())
                 .isActive(entity.getIsActive () != null ? entity.getIsActive() : null)

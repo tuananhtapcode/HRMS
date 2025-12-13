@@ -15,18 +15,16 @@ import java.util.Optional;
 public interface WorkdayRepository extends JpaRepository<Workday, Long> {
     List<Workday> findByDate(LocalDate date);
 
-    // tìm theo nhân viên và ngày cụ thể.
-    List<Workday> findByEmployeeIdAndDate(Long employeeId, LocalDate date);
     // Tìm Workday của 1 nhân viên vào 1 ngày cụ thể (để xử lý daily)
     Optional<Workday> findByEmployeeAndDate(Employee employee, LocalDate date);
 
     // kiểm tra có tồn tại ngày làm việc trong khoảng
-    boolean existsByEmployeeIdAndDateBetween(Long employeeId, LocalDate start, LocalDate end);
+//    boolean existsByEmployeeIdAndDateBetween(Long employeeId, LocalDate start, LocalDate end);
+
     // Tìm list Workday của 1 nhân viên trong khoảng thời gian (để tổng hợp tháng)
     List<Workday> findByEmployee_EmployeeIdAndDateBetween(Long employeeId, LocalDate startDate, LocalDate endDate);
 
-    //lấy danh sách ngày làm việc trong khoảng (for cancel cleanup)
-    List<Workday> findByEmployeeIdAndDateBetween(Long employeeId, LocalDate start, LocalDate end);
+
     // (Tùy chọn) Tìm Workday theo phòng ban và khoảng thời gian
     @Query("SELECT w FROM Workday w WHERE w.employee.department.departmentId = :deptId AND w.date BETWEEN :startDate AND :endDate")
     List<Workday> findByDepartmentAndDateBetween(@Param("deptId") Long deptId, @Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate);

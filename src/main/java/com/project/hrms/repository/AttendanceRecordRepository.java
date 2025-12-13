@@ -22,18 +22,21 @@ public interface AttendanceRecordRepository extends JpaRepository<AttendanceReco
      * Lấy record của nhân viên theo ngày.
      * @return Optional để service quyết định create hay throw.
      */
-    Optional<AttendanceRecord> findByEmployeeIdAndAttendanceDate(Long employeeId, LocalDate attendanceDate);
+//    Optional<AttendanceRecord> findByEmployee_EmployeeIdAndAttendanceDate(
+//            Long employeeId,
+//            LocalDate attendanceDate
+//    );
 
-    List<AttendanceRecord> findByEmployee_EmployeeIdAndAttendanceDateBetween(
-            Long employeeId, LocalDate startDate, LocalDate endDate
-    );
-    /**
-     * Lấy record với lock để cập nhật an toàn (pessimistic lock).
-     * Dùng trong add/subtract để tránh race condition.
-     */
     @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @Query("SELECT a FROM AttendanceRecord a WHERE a.employeeId = :employeeId AND a.attendanceDate = :attendanceDate")
-    Optional<AttendanceRecord> findByEmployeeIdAndAttendanceDateForUpdate(@Param("employeeId") Long employeeId,
-                                                                          @Param("attendanceDate") LocalDate attendanceDate);
+    @Query("""
+        select ar
+        from AttendanceRecord ar
+        where ar.employee.employeeId = :employeeId
+          and ar.attendanceDate = :date
+    """)
+    Optional<AttendanceRecord> findByEmployeeIdAndAttendanceDateForUpdate(
+            @Param("employeeId") Long employeeId,
+            @Param("date") LocalDate date
+    );
 }
 

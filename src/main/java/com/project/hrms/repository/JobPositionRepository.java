@@ -17,6 +17,9 @@ public interface JobPositionRepository extends JpaRepository<JobPosition, Long> 
 
     Optional<JobPosition> findByCode(String code);
 
+    Page<JobPosition> findByIsActive(Boolean isActive, Pageable pageable);
+
+
     boolean existsByCode(String code);
 
     boolean existsByName(String name);
@@ -36,8 +39,12 @@ public interface JobPositionRepository extends JpaRepository<JobPosition, Long> 
       AND (:level IS NULL OR j.level = :level)
       AND (:isActive IS NULL OR j.isActive = :isActive)
 """)
-    List<JobPosition> searchAdvanced(@Param("name") String name,
-                                     @Param("level") String level,
-                                     @Param("isActive") Boolean isActive);
+    Page<JobPosition> searchAdvanced(
+            @Param("name") String name,
+            @Param("level") String level,
+            @Param("isActive") Boolean isActive,
+            Pageable pageable
+    );
+
 
 }

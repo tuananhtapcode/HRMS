@@ -5,14 +5,12 @@ import com.project.hrms.dto.OvertimeRequestDTO;
 import com.project.hrms.dto.RequestApproveDTO;
 import com.project.hrms.exception.DataNotFoundException;
 import com.project.hrms.exception.InvalidParamException;
+import com.project.hrms.model.AttendanceRecord;
 import com.project.hrms.model.AuditLog;
 import com.project.hrms.model.Employee;
 import com.project.hrms.model.OvertimeRequest;
 import com.project.hrms.model.enums.RequestStatus;
-import com.project.hrms.repository.AccountRepository;
-import com.project.hrms.repository.AuditLogRepository;
-import com.project.hrms.repository.EmployeeRepository;
-import com.project.hrms.repository.OvertimeRequestRepository;
+import com.project.hrms.repository.*;
 import com.project.hrms.response.OvertimeRequestResponse;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -35,6 +33,7 @@ public class OvertimeRequestService implements IOvertimeRequestService {
     private final AuditLogRepository auditRepo;
     private final EmployeeRepository employeeRepository;
     private final AccountRepository accountRepository;
+    private final AttendanceRecordRepository attendanceRecordRepository;
     private final OvertimeRequestMapper overtimeRequestMapper;
     private final AuthService authService;
     private final AttendanceRecordService attendanceService;
@@ -249,48 +248,44 @@ public class OvertimeRequestService implements IOvertimeRequestService {
             throw new IllegalStateException("Chỉ có thể duyệt yêu cầu đang PENDING");
         }
 
+        Long employeeId = req.getEmployeeId();
+        LocalDate date = req.getDate();
+
         // 5) Tính số phút yêu cầu
-        int requestedMin = (int) Math.round(req.getTotalHours() * 60);
+        int minutes = (int) Math.round(req.getTotalHours() * 60);
 
-        // 6) Tổng OT đã duyệt trong ngày
-        int existingApprovedMin = attendanceService.getOvertimeMinutes(
-                req.getEmployeeId(),
-                req.getDate()
-        );
+        // BẮT BUỘC có attendance + shift
+        attendanceRecordRepository
+                .findByEmployee_EmployeeIdAndAttendanceDate(employeeId, date)
+                .orElseThrow(() ->
+                        new IllegalStateException(
+                                "Nhân viên chưa có ca làm việc trong ngày này, không thể duyệt OT"
+                        )
+                );
 
-        // 7) Số phút còn có thể duyệt
-        int canAdd = Math.max(0, MAX_OT_MINUTES_PER_DAY - existingApprovedMin);
+        // Cộng OT
+        int added = attendanceService.addOvertimeMinutes(employeeId, date, minutes);
 
-        // 8) Số phút thực sự được duyệt
-        int actuallyAdd = Math.min(canAdd, requestedMin);
-
-        if (actuallyAdd <= 0) {
-            throw new IllegalStateException("Đã đạt giới hạn OT trong ngày; không thể approve thêm");
+        if (added <= 0) {
+            throw new IllegalStateException("Không thể cộng OT (đã đạt giới hạn ngày)");
         }
 
-        // 9) Cộng vào attendance
-        int added = attendanceService.addOvertimeMinutes(
-                req.getEmployeeId(),
-                req.getDate(),
-                actuallyAdd
-        );
-
-        // 10) Cập nhật trạng thái
+        // Cập nhật trạng thái
         req.setStatus(RequestStatus.APPROVED);
         req.setAccountApproverId(approverId);
         req.setApprovedAt(LocalDateTime.now());
         req.setApprovedNote(dto.getManagerNote());
-        overtimeRequestRepository.save(req);
+        OvertimeRequest saved =  overtimeRequestRepository.save(req);
 
         // 11) Audit
         saveAudit(
-                req.getOvertimeRequestId(),
+                saved.getOvertimeRequestId(),
                 AuditLog.AuditAction.APPROVE,
                 approverId,
                 String.format("Duyệt, đã cộng %d phút vào attendance", added)
         );
 
-        return overtimeRequestMapper.toResponse(req);
+        return overtimeRequestMapper.toResponse(saved);
     }
 
 
@@ -319,15 +314,16 @@ public class OvertimeRequestService implements IOvertimeRequestService {
         req.setApprovedNote(dto.getManagerNote());
         overtimeRequestRepository.save(req);
 
-        // 6) Audit
+        OvertimeRequest saved = overtimeRequestRepository.save(req);
+
         saveAudit(
-                req.getOvertimeRequestId(),
+                saved.getOvertimeRequestId(),
                 AuditLog.AuditAction.REJECT,
                 approverId,
-                "Reject: " + dto.getManagerNote()
+                "Từ chối yêu cầu OT"
         );
 
-        return overtimeRequestMapper.toResponse(req);
+        return overtimeRequestMapper.toResponse(saved);
     }
 
 
@@ -336,43 +332,50 @@ public class OvertimeRequestService implements IOvertimeRequestService {
     public OvertimeRequestResponse cancelRequest(Long id) {
 
         Long currentUserId = authService.getCurrentUserId();
-        String role = authService.getCurrentRole(); // ROLE_EMPLOYEE / ROLE_MANAGER / ROLE_ADMIN
+        String role = authService.getCurrentRole();
 
-        // 1. Lấy request
         OvertimeRequest req = overtimeRequestRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy yêu cầu OT"));
 
-        // 2. Chỉ PENDING mới được hủy
-        if (req.getStatus() != RequestStatus.PENDING) {
-            throw new IllegalStateException("Chỉ được hủy yêu cầu ở trạng thái PENDING");
+        boolean isOwner = req.getEmployeeId().equals(currentUserId);
+        boolean isAdminOrManager =
+                role.equals("ROLE_ADMIN") || role.equals("ROLE_MANAGER");
+
+        // Rule
+        if (isOwner) {
+            if (req.getStatus() != RequestStatus.PENDING) {
+                throw new IllegalStateException("Nhân viên chỉ được huỷ đơn PENDING");
+            }
+        } else if (!isAdminOrManager) {
+            throw new IllegalStateException("Không có quyền huỷ yêu cầu OT");
         }
 
-        // 3. Quyền hạn
-        boolean isEmployee = role.equals("ROLE_EMPLOYEE");
-
-        // Nhân viên chỉ được hủy đơn của chính mình
-        if (isEmployee && !req.getEmployeeId().equals(currentUserId)) {
-            throw new IllegalStateException("Bạn không thể hủy yêu cầu của người khác");
+        // Nếu đã APPROVED → rollback OT
+        if (req.getStatus() == RequestStatus.APPROVED) {
+            int minutes = (int) Math.round(req.getTotalHours() * 60);
+            attendanceService.subtractOvertimeMinutes(
+                    req.getEmployeeId(),
+                    req.getDate(),
+                    minutes
+            );
         }
 
-        // Quản lý thì bỏ qua kiểm tra employeeId vì được phép hủy tất cả
-
-        // 4. Cập nhật trạng thái
         req.setStatus(RequestStatus.CANCELLED);
-        req.setUpdatedAt(LocalDateTime.now());
+        req.setApprovedAt(LocalDateTime.now());
+        req.setAccountApproverId(currentUserId);
 
         OvertimeRequest saved = overtimeRequestRepository.save(req);
 
-        // 5. Audit
         saveAudit(
-                id,
+                saved.getOvertimeRequestId(),
                 AuditLog.AuditAction.CANCEL,
                 currentUserId,
-                "Hủy yêu cầu OT"
+                "Huỷ yêu cầu OT"
         );
 
         return overtimeRequestMapper.toResponse(saved);
     }
+
 
 
     @Override

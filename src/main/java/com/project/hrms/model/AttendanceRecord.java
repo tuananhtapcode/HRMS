@@ -51,6 +51,9 @@ public class AttendanceRecord {
     private Integer totalWorkMinutes;
 
     @Column(columnDefinition = "INT DEFAULT 0")
+    private Integer overtimeMinutes;
+
+    @Column(columnDefinition = "INT DEFAULT 0")
     private Integer lateMinutes;
 
     @Column()
