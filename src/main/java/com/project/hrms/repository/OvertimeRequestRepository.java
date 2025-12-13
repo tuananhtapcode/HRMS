@@ -24,7 +24,6 @@ public interface OvertimeRequestRepository extends JpaRepository<OvertimeRequest
             Long employeeId, RequestStatus status, LocalDate startDate, LocalDate endDate
     );
 
-
     @Query("SELECT o FROM OvertimeRequest o WHERE o.employeeId = :employeeId AND o.date = :date " +
             "AND o.status IN :statuses " +
             "AND NOT (o.endTime <= :startTime OR o.startTime >= :endTime)")

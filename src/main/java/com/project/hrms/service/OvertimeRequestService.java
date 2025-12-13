@@ -256,7 +256,7 @@ public class OvertimeRequestService implements IOvertimeRequestService {
 
         // BẮT BUỘC có attendance + shift
         attendanceRecordRepository
-                .findByEmployee_EmployeeIdAndAttendanceDate(employeeId, date)
+                .findFirstByEmployee_EmployeeIdAndAttendanceDate(employeeId, date)
                 .orElseThrow(() ->
                         new IllegalStateException(
                                 "Nhân viên chưa có ca làm việc trong ngày này, không thể duyệt OT"

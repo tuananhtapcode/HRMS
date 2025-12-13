@@ -15,7 +15,7 @@ import com.project.hrms.service.AttendanceRecordService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -33,17 +33,55 @@ import java.util.Optional;
  */
 @Service
 @RequiredArgsConstructor
-public class AttendanceService implements IAttendanceService {
+public class AttendanceRecordService implements IAttendanceRecordService {
 
     private final AccountRepository accountRepository;
     private final ShiftAssignmentRepository assignmentRepository;
-    private final AttendanceRecordRepository recordRepository;
+    private final AttendanceRecordRepository attendanceRecordRepository;
     private final AttendanceLogRepository logRepository;
     private final OvertimeRequestRepository otRequestRepository;
+
+    // cap OT tối đa 8 giờ = 480 phút
+    private static final int MAX_OT_MINUTES_PER_DAY = 8 * 60;
+
+    //laySoPhutTangCa
+    @Override
+    public int getOvertimeMinutes(Long employeeId, LocalDate date) {
+        return attendanceRecordRepository
+                .findFirstByEmployee_EmployeeIdAndAttendanceDate(employeeId, date)
+                .map(r -> r.getOvertimeMinutes() == null ? 0 : r.getOvertimeMinutes())
+                .orElse(0);
+    }
+
+    //congPhutTangCa
+    @Override
+    @Transactional
+    public int addOvertimeMinutes(Long employeeId, LocalDate date, int minutesToAdd) {
+
+        AttendanceRecord record = attendanceRecordRepository
+                .findByEmployeeIdAndAttendanceDateForUpdate(employeeId, date)
+                .orElseThrow(() ->
+                        new IllegalStateException(
+                                "Không tìm thấy attendance record cho ngày " + date +
+                                        ". Không thể cộng OT khi chưa có ca làm việc."
+                        )
+                );
+
+        int current = record.getOvertimeMinutes() == null ? 0 : record.getOvertimeMinutes();
+        int canAdd = Math.max(0, MAX_OT_MINUTES_PER_DAY - current);
+        int toAdd = Math.min(canAdd, Math.max(0, minutesToAdd));
+
+        if (toAdd <= 0) return 0;
+
+        record.setOvertimeMinutes(current + toAdd);
+        attendanceRecordRepository.save(record);
+        return toAdd;
+    }
 
     // =========================================================================
     // PHẦN 1: LOGIC CŨ (LEGACY) - GIỮ NGUYÊN ĐỂ LEADER TEST
     // =========================================================================
+    //truPhutTangCa
     @Override
     @Transactional
     public int subtractOvertimeMinutes(Long employeeId, LocalDate date, int minutesToSubtract) {
@@ -62,15 +100,17 @@ public class AttendanceService implements IAttendanceService {
         return toSubtract;
     }
 
+    //layTongSoPhutLamViecCua1Nhanvien
     @Override
     public int getTotalWorkMinutes(Long employeeId, LocalDate date) {
         return attendanceRecordRepository
-                .findByEmployee_EmployeeIdAndAttendanceDate(employeeId, date)
+                .findFirstByEmployee_EmployeeIdAndAttendanceDate(employeeId, date)
                 .map(r -> r.getTotalWorkMinutes() == null ? 0 : r.getTotalWorkMinutes())
                 .orElse(0);
     }
 
 
+    //checkIn
     @Override
     @org.springframework.transaction.annotation.Transactional
     public AttendanceResponse performCheckIn(String username) {
@@ -89,7 +129,7 @@ public class AttendanceService implements IAttendanceService {
         ShiftAssignment assignment = assignments.get(0);
         Shift shift = assignment.getShift();
 
-        List<AttendanceRecord> existingRecords = recordRepository.findByEmployee_EmployeeIdAndAttendanceDate(employee.getEmployeeId(), today);
+        Optional<AttendanceRecord> existingRecords = attendanceRecordRepository.findFirstByEmployee_EmployeeIdAndAttendanceDate(employee.getEmployeeId(), today);
         if (!existingRecords.isEmpty()) {
             throw new InvalidActionException("Bạn đã Check-in ngày hôm nay rồi (Logic Cũ).");
         }
@@ -112,10 +152,11 @@ public class AttendanceService implements IAttendanceService {
         record.setStatus(status);
         record.setLateMinutes((int) lateMinutes);
 
-        AttendanceRecord savedRecord = recordRepository.save(record);
+        AttendanceRecord savedRecord = attendanceRecordRepository.save(record);
         return AttendanceResponse.fromEntity(savedRecord);
     }
 
+    //checkOut
     @Override
     @Transactional
     public AttendanceResponse performCheckOut(String username) {
@@ -126,12 +167,12 @@ public class AttendanceService implements IAttendanceService {
                 .orElseThrow(() -> new DataNotFoundException("Account not found"));
         Employee employee = account.getEmployee();
 
-        List<AttendanceRecord> records = recordRepository.findByEmployee_EmployeeIdAndAttendanceDate(employee.getEmployeeId(), today);
+        Optional<AttendanceRecord> records = attendanceRecordRepository.findFirstByEmployee_EmployeeIdAndAttendanceDate(employee.getEmployeeId(), today);
 
         if (records.isEmpty()) {
             throw new InvalidActionException("Chưa Check-in (Logic Cũ).");
         }
-        AttendanceRecord record = records.get(0);
+        AttendanceRecord record = records.get();
 
         if (record.getCheckOutTime() != null) {
             throw new InvalidActionException("Đã Check-out rồi (Logic Cũ).");
@@ -142,7 +183,7 @@ public class AttendanceService implements IAttendanceService {
         long workMinutes = ChronoUnit.MINUTES.between(record.getCheckInTime(), now);
         record.setTotalWorkMinutes((int) Math.max(0, workMinutes));
 
-        AttendanceRecord savedRecord = recordRepository.save(record);
+        AttendanceRecord savedRecord = attendanceRecordRepository.save(record);
         return AttendanceResponse.fromEntity(savedRecord);
     }
 
@@ -150,6 +191,7 @@ public class AttendanceService implements IAttendanceService {
     // PHẦN 2: LOGIC MỚI (SMART TAP) - MIN/MAX ALGORITHM
     // =========================================================================
 
+    //quetChamCong
     @Override
     @Transactional
     public AttendanceResponse tapAttendance(String username, AttendanceTapDTO dto) {
@@ -174,6 +216,7 @@ public class AttendanceService implements IAttendanceService {
         return recalculateDailyAttendance(employee, today, assignments);
     }
 
+    //tinhLaiChamCongTrongNgay
     private AttendanceResponse recalculateDailyAttendance(Employee employee, LocalDate date, List<ShiftAssignment> assignments) {
         LocalDateTime startSearch = date.atStartOfDay();
         LocalDateTime endSearch = date.plusDays(1).atTime(12, 0);
@@ -182,12 +225,15 @@ public class AttendanceService implements IAttendanceService {
         List<AttendanceLog> logs = logRepository.findByEmployee_EmployeeIdAndTimeBetweenOrderByTimeAsc(
                 employee.getEmployeeId(), startSearch, endSearch);
 
-        List<AttendanceRecord> existingRecords = recordRepository.findByEmployee_EmployeeIdAndAttendanceDate(employee.getEmployeeId(), date);
+        List<AttendanceRecord> existingRecords =
+                attendanceRecordRepository.findByEmployee_EmployeeIdAndAttendanceDate(
+                        employee.getEmployeeId(), date
+                );
 
         AttendanceRecord lastSavedRecord = null;
 
         // 2. Lấy OT Approved
-        List<OvertimeRequest> approvedOts = otRequestRepository.findByEmployee_EmployeeIdAndStatusAndDateBetween(
+        List<OvertimeRequest> approvedOts = otRequestRepository.findByEmployeeIdAndStatusAndDateBetween(
                 employee.getEmployeeId(), RequestStatus.APPROVED, date, date
         );
 
@@ -195,13 +241,14 @@ public class AttendanceService implements IAttendanceService {
         for (ShiftAssignment assignment : assignments) {
             AttendanceRecord record = processSingleShift(assignment, logs, date, approvedOts, existingRecords);
             if (record != null) {
-                lastSavedRecord = recordRepository.save(record); // Save lúc này hoạt động như Update
+                lastSavedRecord = attendanceRecordRepository.save(record); // Save lúc này hoạt động như Update
             }
         }
 
         return lastSavedRecord != null ? AttendanceResponse.fromEntity(lastSavedRecord) : null;
     }
 
+    //xuLyMotCaLamViec
     private AttendanceRecord processSingleShift(ShiftAssignment assignment,
                                                 List<AttendanceLog> logs,
                                                 LocalDate date,
@@ -218,16 +265,15 @@ public class AttendanceService implements IAttendanceService {
         // Mặc định là hết ca (Shift End)
         LocalDateTime validEndTime = shiftEnd;
 
-        BigDecimal totalOtHours = BigDecimal.ZERO;
+        Double totalOtHours = 0.0;
         for (OvertimeRequest ot : approvedOts) {
-            if (ot.getHours() != null) totalOtHours = totalOtHours.add(ot.getHours());
+            if (ot.getTotalHours() != null) {
+                totalOtHours += ot.getTotalHours();
+            }
         }
 
-        // Nếu có OT approved -> Nới rộng giờ hợp lệ ra
-        if (totalOtHours.compareTo(BigDecimal.ZERO) > 0) {
-            long otMinutes = totalOtHours.multiply(BigDecimal.valueOf(60)).longValue();
-            validEndTime = validEndTime.plusMinutes(otMinutes);
-        }
+        long otMinutes = (long) (totalOtHours * 60);
+        validEndTime = validEndTime.plusMinutes(otMinutes);
 
         // --- TÌM LOG (Min-Max) ---
         // Window tìm kiếm vẫn để rộng (để bắt log), nhưng tính toán sẽ bị cắt theo validEndTime
@@ -272,6 +318,7 @@ public class AttendanceService implements IAttendanceService {
         return record;
     }
 
+    //tinhCongVaGioiHanGioLam
     // Hàm tính toán mới: Áp dụng Capping (Chốt chặn)
     private void calculateMetricsWithCap(AttendanceRecord record,
                                          LocalDateTime shiftStart,

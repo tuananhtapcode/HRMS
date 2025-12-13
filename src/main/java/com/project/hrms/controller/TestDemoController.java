@@ -4,7 +4,7 @@ import com.project.hrms.dto.AttendanceTapDTO;
 import com.project.hrms.model.AttendanceLog;
 import com.project.hrms.repository.AccountRepository;
 import com.project.hrms.repository.AttendanceLogRepository;
-import com.project.hrms.service.IAttendanceService;
+import com.project.hrms.service.IAttendanceRecordService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -23,7 +23,7 @@ import java.util.List;
 public class TestDemoController {
 
     private final AttendanceLogRepository logRepository;
-    private final IAttendanceService attendanceService; // Inject Service của bạn
+    private final IAttendanceRecordService attendanceService; // Inject Service của bạn
     private final AccountRepository accountRepository;
 
     @PostMapping("/simulate-full-day")

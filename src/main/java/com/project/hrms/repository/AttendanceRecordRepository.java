@@ -16,16 +16,23 @@ import org.springframework.data.jpa.repository.Lock;
 @Repository
 public interface AttendanceRecordRepository extends JpaRepository<AttendanceRecord, Long> {
 
-    // Tìm bản ghi chấm công của 1 nhân viên trong 1 ngày
-    Optional<AttendanceRecord> findByEmployee_EmployeeIdAndAttendanceDate(Long employeeId, LocalDate date);
-    /**
-     * Lấy record của nhân viên theo ngày.
-     * @return Optional để service quyết định create hay throw.
-     */
+//    // Tìm bản ghi chấm công của 1 nhân viên trong 1 ngày
+//    List<AttendanceRecord> findByEmployee_EmployeeIdAndAttendanceDate(Long employeeId, LocalDate date);
+//
+//    /**
+//     * Lấy record của nhân viên theo ngày.
+//     * @return Optional để service quyết định create hay throw.
+//     */
 //    Optional<AttendanceRecord> findByEmployee_EmployeeIdAndAttendanceDate(
 //            Long employeeId,
 //            LocalDate attendanceDate
 //    );
+
+    // Smart Tap: 1 ngày có thể nhiều ca
+    List<AttendanceRecord> findByEmployee_EmployeeIdAndAttendanceDate(Long employeeId, LocalDate date);
+
+    // Legacy: lấy bản ghi đầu tiên (nếu cần)
+    Optional<AttendanceRecord> findFirstByEmployee_EmployeeIdAndAttendanceDate(Long employeeId, LocalDate date);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("""

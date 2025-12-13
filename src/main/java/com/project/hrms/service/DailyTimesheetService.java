@@ -104,7 +104,7 @@ public class DailyTimesheetService implements IDailyTimesheetService {
         LeaveRequest approvedLeave = leaves.isEmpty() ? null : leaves.get(0);
 
         if (approvedLeave != null) {
-            workday.setLeaveRequest(approvedLeave);
+            workday.setLeaveRequestId(approvedLeave.getLeaveRequestId());
             String type = approvedLeave.getLeaveType() != null ? approvedLeave.getLeaveType().toLowerCase() : "";
 
             if (type.contains("không lương") || type.contains("unpaid")) {
@@ -113,7 +113,7 @@ public class DailyTimesheetService implements IDailyTimesheetService {
                 finalStatus = AttendanceStatus.LEAVE_PAID;
             }
         } else {
-            workday.setLeaveRequest(null);
+            workday.setLeaveRequestId(null);
         }
 
         // 7. Tính toán Giờ công (Regular) và Giờ thừa (Excess)
@@ -125,20 +125,20 @@ public class DailyTimesheetService implements IDailyTimesheetService {
 
         // 8. Xử lý OT (Overtime)
         // Cộng tổng tất cả các đơn OT trong ngày (phòng trường hợp OT trưa + OT tối)
-        List<OvertimeRequest> ots = overtimeRepo.findByEmployee_EmployeeIdAndStatusAndDateBetween(
+        List<OvertimeRequest> ots = overtimeRepo.findByEmployeeIdAndStatusAndDateBetween(
                 employeeId, RequestStatus.APPROVED, date, date);
 
         double totalApprovedOtHours = 0.0;
         OvertimeRequest primaryOtRequest = null; // Lưu 1 cái đại diện vào DB
 
         for (OvertimeRequest ot : ots) {
-            if (ot.getHours() != null) {
-                totalApprovedOtHours += ot.getHours().doubleValue();
+            if (ot.getTotalHours() != null) {
+                totalApprovedOtHours += ot.getTotalHours().doubleValue();
             }
             if (primaryOtRequest == null) primaryOtRequest = ot;
         }
 
-        workday.setOvertimeRequest(primaryOtRequest); // Map đại diện 1 đơn
+        workday.setOvertimeRequestId(primaryOtRequest.getOvertimeRequestId()); // Map đại diện 1 đơn
 
         double totalApprovedOtMinutes = totalApprovedOtHours * 60.0;
 

@@ -1,5 +1,6 @@
 package com.project.hrms.service;
 
+import com.project.hrms.dto.AttendanceTapDTO;
 import com.project.hrms.response.AttendanceResponse;
 
 import java.time.LocalDate;
@@ -31,4 +32,5 @@ public interface IAttendanceRecordService
 
     AttendanceResponse performCheckIn(String username);
     AttendanceResponse performCheckOut(String username);
+    AttendanceResponse tapAttendance(String username, AttendanceTapDTO dto);
 }
