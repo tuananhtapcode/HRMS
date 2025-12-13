@@ -1,18 +1,21 @@
 package com.project.hrms.security;
 
+import com.project.hrms.model.Account; // <-- Import Account của bạn
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
 import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.GrantedAuthority; // <-- Import này
 import org.springframework.stereotype.Component;
+
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
+import java.util.List;
+import java.util.stream.Collectors; // <-- Import này
 import lombok.extern.slf4j.Slf4j;
-import java.util.Base64;
 
 @Slf4j
 @Component
@@ -31,26 +34,42 @@ public class JwtTokenProvider {
         this.secretKey = Keys.hmacShaKeyFor(jwtSecret.getBytes(StandardCharsets.UTF_8));
     }
 
-//    private SecretKey getSigningKey() {
-//        byte[] keyBytes = jwtSecret.getBytes(StandardCharsets.UTF_8);
-//        return Keys.hmacShaKeyFor(keyBytes);
-//    }
-
-    // Hàm tạo token từ thông tin Authentication
+    // --- HÀM NÀY ĐÃ ĐƯỢC SỬA ---
     public String generateToken(Authentication authentication) {
-        UserDetails userPrincipal = (UserDetails) authentication.getPrincipal();
+        // 1. Ép kiểu về Account (Thay vì UserDetails chung chung)
+        // Vì Account của bạn đã implements UserDetails rồi
+        Account account = (Account) authentication.getPrincipal();
+
         Date now = new Date();
         Date expiryDate = new Date(now.getTime() + jwtExpirationInMs);
 
-        return Jwts.builder()
-                .setSubject(userPrincipal.getUsername())
+        // 2. Lấy danh sách Roles từ Account
+        // Kết quả sẽ là list string: ["ROLE_ADMIN", "ROLE_USER"...]
+        List<String> roles = account.getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority)
+                .collect(Collectors.toList());
+
+        // 3. Khởi tạo Builder
+        JwtBuilder builder = Jwts.builder()
+                .setSubject(account.getUsername())
                 .setIssuedAt(new Date())
                 .setExpiration(expiryDate)
                 .signWith(secretKey, SignatureAlgorithm.HS512)
-                .compact();
+
+                // 4. QUAN TRỌNG: Nhét Role vào Token
+                .claim("roles", roles);
+
+        // 5. Tiện thể nhét luôn EmployeeId và Tên (nếu có)
+        // Giúp Frontend lấy được ID nhân viên ngay từ token mà không cần gọi API khác
+        if (account.getEmployee() != null) {
+            builder.claim("employeeId", account.getEmployee().getEmployeeId());
+            builder.claim("fullName", account.getEmployee().getFullName());
+        }
+
+        return builder.compact();
     }
 
-    // Hàm lấy username từ token
+    // Hàm lấy username từ token (Giữ nguyên)
     public String getUsernameFromJWT(String token) {
         Claims claims = Jwts.parserBuilder()
                 .setSigningKey(secretKey)
@@ -60,7 +79,7 @@ public class JwtTokenProvider {
         return claims.getSubject();
     }
 
-    // Hàm kiểm tra token có hợp lệ không
+    // Hàm kiểm tra token (Giữ nguyên)
     public boolean validateToken(String authToken) {
         try {
             Jwts.parserBuilder()

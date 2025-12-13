@@ -10,11 +10,11 @@ import java.time.LocalDateTime;
 @EqualsAndHashCode(callSuper = true)
 @Entity
 @Table(name = "leave_request")
+@Data
 @NoArgsConstructor
 @AllArgsConstructor
-@Data
-@Builder
-public class LeaveRequest extends BaseEntity{
+public class LeaveRequest extends BaseEntity {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long leaveRequestId;
@@ -34,6 +34,9 @@ public class LeaveRequest extends BaseEntity{
 
     @Column(columnDefinition = "TEXT")
     private String reason;
+
+    @Column(length = 100, nullable = false)
+    private String leaveType;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)

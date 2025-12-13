@@ -78,4 +78,15 @@ public class ShiftAssignmentController {
         assignmentService.bulkAssignByDepartment(dto);
         return ResponseEntity.ok(ApiResponse.success("Phân ca hàng loạt cho phòng ban thành công", null));
     }
+    @GetMapping("/department/{deptId}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
+    public ResponseEntity<ApiResponse<List<ShiftAssignmentDTO>>> getDepartmentSchedule(
+            @PathVariable Long deptId,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
+
+        List<ShiftAssignmentDTO> list = assignmentService.getDepartmentSchedule(deptId, startDate, endDate);
+
+        return ResponseEntity.ok(ApiResponse.success("Lấy lịch phân ca phòng ban thành công", list));
+    }
 }

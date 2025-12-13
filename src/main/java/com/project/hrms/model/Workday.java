@@ -1,7 +1,7 @@
 package com.project.hrms.model;
 
 import com.project.hrms.model.enums.AttendanceStatus;
-import com.project.hrms.model.enums.WorkType;
+import com.project.hrms.model.enums.DayType;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -28,38 +28,36 @@ public class Workday extends BaseEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "shift_id")
-    private Shift shift; // Ca làm việc thực tế
+    private Shift shift;
 
-    // --- CÁC CỘT TỔNG HỢP ---
-    @Column(columnDefinition = "DOUBLE DEFAULT 0")
-    private Double standardWorkDays; // Công chuẩn (Đi làm)
-
-    // Leave
-    @Column
-    private Long leaveRequestId;
+    // --- CÁC TRƯỜNG DỮ LIỆU ---
 
     @Column(columnDefinition = "DOUBLE DEFAULT 0")
-    private Double paidLeaveDays;    // Công nghỉ phép hưởng lương
+    private Double hoursWorked; // Giờ làm việc thực tế
 
-    @Column(columnDefinition = "DOUBLE DEFAULT 0")
-    private Double unauthorizedLeaveDays; // Nghỉ không phép
+    @Enumerated(EnumType.STRING)
+    @Column(name = "work_type", length = 50)
+    private DayType workType; // NORMAL, WEEKEND...
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "attendance_status", length = 50)
+    private AttendanceStatus attendanceStatus; // PRESENT, LATE, LEAVE...
+
+    @Column(name = "hours_overtime", columnDefinition = "DOUBLE DEFAULT 0")
+    private Double hoursOvertime; // Giờ OT
+
+    // --- CÁC KHÓA NGOẠI (SNAPSHOT ĐƠN TỪ) ---
     @Column
     private Long overtimeRequestId;
 
-    @Column(columnDefinition = "DOUBLE DEFAULT 0")
-    private Double overtimeHours;    // Giờ làm thêm
+    @Column
+    private Long leaveRequestId;
 
-    @Column(columnDefinition = "INT DEFAULT 0")
-    private Integer lateMinutes;     // Số phút đi muộn
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private WorkType workType = WorkType.NORMAL;
-
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private AttendanceStatus finalStatus = AttendanceStatus.Present;
+    // Nếu chưa có entity ShiftChangeRequest thì tạm comment dòng này hoặc tạo entity rỗng
+    // @OneToOne(fetch = FetchType.LAZY)
+    // @JoinColumn(name = "shift_change_request_id")
+    // private ShiftChangeRequest shiftChangeRequest;
 }
 //Enum WorkType quyết định loại ngày công (bình thường, nghỉ phép, nghỉ ốm…).
 //

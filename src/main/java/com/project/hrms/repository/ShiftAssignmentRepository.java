@@ -2,6 +2,8 @@ package com.project.hrms.repository;
 
 import com.project.hrms.model.ShiftAssignment;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
@@ -16,8 +18,7 @@ public interface ShiftAssignmentRepository extends JpaRepository<ShiftAssignment
      * trong ngày đó chưa.
      * Tên hàm: findBy[Tên trường của Entity].[Tên trường của Entity con]...
      */
-    Optional<ShiftAssignment> findByEmployee_EmployeeIdAndAssignmentDate(Long employeeId, LocalDate date);
-
+    List<ShiftAssignment> findAllByEmployee_EmployeeIdAndAssignmentDate(Long employeeId, LocalDate date);
     /**
      * Dùng để lấy lịch làm việc của nhân viên trong một khoảng thời gian
      * (ví dụ: lấy lịch làm việc tháng 11)
@@ -26,5 +27,16 @@ public interface ShiftAssignmentRepository extends JpaRepository<ShiftAssignment
             Long employeeId,
             LocalDate startDate,
             LocalDate endDate
+    );
+
+    // Trong interface ShiftAssignmentRepository
+    @Query("SELECT s FROM ShiftAssignment s " +
+            "WHERE s.employee.department.departmentId = :deptId " +
+            "AND s.assignmentDate BETWEEN :startDate AND :endDate " +
+            "ORDER BY s.employee.fullName ASC, s.assignmentDate ASC")
+    List<ShiftAssignment> findByDepartmentAndDateBetween(
+            @Param("deptId") Long deptId,
+            @Param("startDate") LocalDate startDate,
+            @Param("endDate") LocalDate endDate
     );
 }

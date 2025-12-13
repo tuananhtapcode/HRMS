@@ -1,25 +1,41 @@
-// src/main/java/com/project/hrms/dto/ShiftAssignmentDTO.java
 package com.project.hrms.dto;
 
-import jakarta.validation.constraints.NotNull;
+import com.fasterxml.jackson.annotation.JsonFormat;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
+
 import java.time.LocalDate;
+import java.time.LocalTime;
 
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class ShiftAssignmentDTO {
 
-    private Long shiftAssignmentId; // Dùng cho output
+    private Long shiftAssignmentId;
 
-    @NotNull(message = "ID Nhân viên không được để trống")
+    // --- Thông tin Core ---
     private Long employeeId;
-
-    @NotNull(message = "ID Ca làm việc không được để trống")
     private Long shiftId;
 
-    @NotNull(message = "Ngày phân ca không được để trống")
+    @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate assignmentDate;
 
-    private Boolean isApproved = true; // Mặc định là đã duyệt
-
+    private Boolean isApproved;
     private String note;
+
+    // --- MỞ RỘNG: Thông tin hiển thị (UI Friendly) ---
+    private String employeeCode;   // Mới
+    private String employeeName;   // Đã có
+    private String jobPosition;    // Mới
+    private String departmentName; // Mới
+
+    // Thông tin ca (để vẽ thanh thời gian)
+    private String shiftName;
+    private LocalTime startTime;
+    private LocalTime endTime;
+    private String shiftCode;
 }
