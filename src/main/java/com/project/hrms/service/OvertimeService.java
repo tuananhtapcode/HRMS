@@ -43,7 +43,7 @@ public class OvertimeService implements IOvertimeService {
         request.setDate(dto.getDate());
         request.setHours(dto.getHours());
         request.setReason(dto.getReason());
-        request.setStatus(RequestStatus.Pending); // Mặc định chờ duyệt
+        request.setStatus(RequestStatus.PENDING); // Mặc định chờ duyệt
 
         OvertimeRequest saved = overtimeRepository.save(request);
         return mapToDTO(saved);
@@ -66,7 +66,7 @@ public class OvertimeService implements IOvertimeService {
         OvertimeRequest request = overtimeRepository.findById(id)
                 .orElseThrow(() -> new DataNotFoundException("Overtime request not found"));
 
-        if (request.getStatus() != RequestStatus.Pending) {
+        if (request.getStatus() != RequestStatus.PENDING) {
             throw new InvalidParamException("Chỉ có thể duyệt đơn đang ở trạng thái Chờ duyệt");
         }
 

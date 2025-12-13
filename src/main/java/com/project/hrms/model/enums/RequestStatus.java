@@ -1,7 +1,7 @@
 package com.project.hrms.model.enums;
 
 public enum RequestStatus {
-    Pending,  // Chờ duyệt
-    Approved, // Đã duyệt
-    Rejected  // Từ chối
+    PENDING,  // Chờ duyệt
+    APPROVED, // Đã duyệt
+    REJECTED  // Từ chối
 }

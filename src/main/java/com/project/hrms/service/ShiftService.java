@@ -4,6 +4,7 @@ import com.project.hrms.dto.ShiftDTO;
 import com.project.hrms.exception.DataNotFoundException; // Từ file exception của bạn
 import com.project.hrms.model.Shift;
 import com.project.hrms.repository.ShiftRepository;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper; // Bạn cần bean này từ MapperConfiguration
 import org.springframework.stereotype.Service;
@@ -41,14 +42,24 @@ public class ShiftService implements IShiftService{
     }
 
     // 4. Admin cập nhật ca
+    @Override // Nhớ thêm @Override nếu đang implement interface
+    @Transactional // Nên có transactional khi update
     public ShiftDTO updateShift(Long id, ShiftDTO dto) {
+        // 1. Tìm ca cũ trong DB
         Shift existingShift = shiftRepository.findById(id)
                 .orElseThrow(() -> new DataNotFoundException("Không tìm thấy ca làm việc."));
 
-        // Dùng ModelMapper để map các trường từ DTO vào entity đã tồn tại
-        modelMapper.map(dto, existingShift);
-        existingShift.setShiftId(id); // Đảm bảo ID không bị thay đổi
+        // 2. LƯU LẠI CODE CŨ (Quan trọng)
+        String oldCode = existingShift.getCode();
 
+        // 3. Map dữ liệu mới vào (Lúc này code có thể bị ghi đè nếu dto.code khác null)
+        modelMapper.map(dto, existingShift);
+
+        // 4. KHÔI PHỤC LẠI CODE CŨ VÀ ID
+        existingShift.setCode(oldCode); // Chặn việc sửa code
+        existingShift.setShiftId(id);   // Đảm bảo ID không đổi
+
+        // 5. Lưu và trả về
         Shift updatedShift = shiftRepository.save(existingShift);
         return modelMapper.map(updatedShift, ShiftDTO.class);
     }

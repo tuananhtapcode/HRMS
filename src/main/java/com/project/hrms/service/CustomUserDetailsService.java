@@ -3,14 +3,10 @@ package com.project.hrms.service;
 import com.project.hrms.model.Account;
 import com.project.hrms.repository.AccountRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
-
-import java.util.Collections;
 
 @Service
 @RequiredArgsConstructor
@@ -25,19 +21,14 @@ public class CustomUserDetailsService implements UserDetailsService {
                 .orElseThrow(() ->
                         new UsernameNotFoundException("User not found with username: " + username));
 
-        // 2. Kiểm tra account có active hay không
+        // 2. Kiểm tra active
         if (Boolean.FALSE.equals(account.getIsActive())) {
             throw new UsernameNotFoundException("Account is deactivated: " + username);
         }
 
-        // 3. Lấy quyền (Role) của account
-        String roleName = "ROLE_" + account.getRole().getCode().toUpperCase();
-
-        // 4. Trả về UserDetails của Spring Security
-        return new User(
-                account.getUsername(),
-                account.getPassword(),
-                Collections.singleton(new SimpleGrantedAuthority(roleName))
-        );
+        // 3. TRẢ VỀ TRỰC TIẾP ACCOUNT (Thay đổi quan trọng nhất)
+        // Vì Account đã implements UserDetails rồi, nên return nó là hợp lệ.
+        // Spring Security sẽ giữ nguyên cục Account này trong suốt phiên làm việc.
+        return account;
     }
 }

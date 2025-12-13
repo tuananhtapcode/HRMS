@@ -1,6 +1,7 @@
 // src/main/java/com/project/hrms/controller/AttendanceController.java
 package com.project.hrms.controller;
 
+import com.project.hrms.dto.AttendanceTapDTO;
 import com.project.hrms.response.ApiResponse;
 import com.project.hrms.response.AttendanceResponse;
 import com.project.hrms.service.IAttendanceService;
@@ -9,6 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -41,5 +43,23 @@ public class AttendanceController {
         AttendanceResponse response = attendanceService.performCheckOut(username);
 
         return ResponseEntity.ok(ApiResponse.success("Check-out thành công!", response));
+    }
+    @PostMapping("/tap")
+    @PreAuthorize("hasAnyRole('USER', 'EMPLOYEE')")
+    public ResponseEntity<ApiResponse<AttendanceResponse>> tapAttendance(
+            @RequestBody(required = false) AttendanceTapDTO dto,
+            Authentication authentication) {
+
+        // Nếu không gửi body, tạo DTO mặc định
+        if (dto == null) {
+            dto = new AttendanceTapDTO();
+            dto.setSource("APP");
+        }
+
+        String username = authentication.getName();
+
+        AttendanceResponse response = attendanceService.tapAttendance(username, dto);
+
+        return ResponseEntity.ok(ApiResponse.success("Chấm công thành công", response));
     }
 }

@@ -27,9 +27,6 @@ public class LeaveRequest extends BaseEntity {
     @JoinColumn(name = "account_approver_id")
     private Account approver;
 
-    @Column(name = "leave_type", length = 50)
-    private String leaveType; // Ví dụ: "Nghỉ phép", "Nghỉ ốm"
-
     @Column(nullable = false)
     private LocalDate startDate;
 
@@ -39,7 +36,10 @@ public class LeaveRequest extends BaseEntity {
     @Column(columnDefinition = "TEXT")
     private String reason;
 
+    @Column(name = "leave_type", length = 100, nullable = false)
+    private String leaveType;
+
     @Enumerated(EnumType.STRING)
-    @Column(columnDefinition = "ENUM('Pending','Approved','Rejected') DEFAULT 'Pending'")
+    @Column(columnDefinition = "ENUM('PENDING','APPROVED','REJECTED') DEFAULT 'PENDING'")
     private RequestStatus status;
 }

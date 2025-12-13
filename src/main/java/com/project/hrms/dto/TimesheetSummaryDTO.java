@@ -21,7 +21,7 @@ public class TimesheetSummaryDTO {
 
     private Double overtimeHours;    // Tổng giờ làm thêm (OT)
 
-    private Integer totalLateMinutes; // Tổng số phút đi muộn
+    private Integer totalLateCount; // Tổng số phút đi muộn
 
     private Double totalPayableDays; // Tổng công hưởng lương (= Đi làm + Nghỉ phép)
 }

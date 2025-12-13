@@ -143,10 +143,10 @@ public class AccountController {
         return ResponseEntity.ok(ApiResponse.success("Đổi mật khẩu thành công", null));
     }
 
-    @PostMapping("/{id}/reset-password")
+    @PostMapping("/reset-password-all-account")
 //    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<?> resetPassword(@PathVariable Long id) {
-        accountService.resetPassword(id);
+    public ResponseEntity<?> resetPasswordAllAccount() {
+        accountService.resetPasswordAllAccount();
         return ResponseEntity.ok(ApiResponse.success("Đặt lại mật khẩu mặc định thành công", null));
     }
 }

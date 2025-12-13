@@ -43,7 +43,7 @@ public class LeaveService implements ILeaveService {
         request.setStartDate(dto.getStartDate());
         request.setEndDate(dto.getEndDate());
         request.setReason(dto.getReason());
-        request.setStatus(RequestStatus.Pending); // Mặc định chờ duyệt
+        request.setStatus(RequestStatus.PENDING); // Mặc định chờ duyệt
 
         LeaveRequest saved = leaveRepository.save(request);
         return mapToDTO(saved);
@@ -64,7 +64,7 @@ public class LeaveService implements ILeaveService {
         LeaveRequest request = leaveRepository.findById(id)
                 .orElseThrow(() -> new DataNotFoundException("Leave request not found"));
 
-        if (request.getStatus() != RequestStatus.Pending) {
+        if (request.getStatus() != RequestStatus.PENDING) {
             throw new InvalidParamException("Chỉ có thể duyệt đơn đang ở trạng thái Chờ duyệt");
         }
 
@@ -84,7 +84,7 @@ public class LeaveService implements ILeaveService {
         List<LeaveRequest> requests;
 
         if (status != null) {
-            // Nếu có truyền status (VD: Pending), chỉ lấy đơn Pending
+            // Nếu có truyền status (VD: PENDING), chỉ lấy đơn PENDING
             requests = leaveRepository.findByStatus(status);
         } else {
             // Nếu không truyền, lấy tất cả
@@ -98,7 +98,6 @@ public class LeaveService implements ILeaveService {
     private LeaveRequestDTO mapToDTO(LeaveRequest entity) {
         return LeaveRequestDTO.builder()
                 .id(entity.getLeaveRequestId())
-                .leaveType(entity.getLeaveType())
                 .startDate(entity.getStartDate())
                 .endDate(entity.getEndDate())
                 .reason(entity.getReason())

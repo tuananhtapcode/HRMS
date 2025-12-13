@@ -10,7 +10,6 @@ import java.time.LocalDateTime;
 @Entity
 @Table(name = "attendance_record",
         uniqueConstraints = {
-                // Một nhân viên chỉ có 1 bản ghi chấm công 1 ngày
                 @UniqueConstraint(columnNames = {"employee_id", "attendance_date"})
         })
 @Data
@@ -26,20 +25,22 @@ public class AttendanceRecord {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "shift_id", nullable = false)
-    private Shift shift; // Ca đã được phân (Kế hoạch)
+    private Shift shift;
 
     @Column(nullable = false)
     private LocalDate attendanceDate;
 
     @Column
-    private LocalDateTime checkInTime; // Giờ vào (Thực tế)
+    private LocalDateTime checkInTime;
 
     @Column
-    private LocalDateTime checkOutTime; // Giờ ra (Thực tế)
+    private LocalDateTime checkOutTime;
 
+    // --- CẬP NHẬT PHẦN NÀY ---
     @Enumerated(EnumType.STRING)
-    @Column(columnDefinition = "ENUM('Present','Late','Absent','OnLeave') DEFAULT 'Present'")
+    @Column(columnDefinition = "ENUM('PRESENT','LATE','LEAVE_PAID','LEAVE_UNPAID','ABSENT','BUSINESS_TRIP') DEFAULT 'ABSENT'")
     private AttendanceStatus status;
+    // --------------------------
 
     @Column(columnDefinition = "INT DEFAULT 0")
     private Integer totalWorkMinutes;

@@ -31,5 +31,5 @@ public interface IAccountService {
 
     Account changePassword(String username, String oldPassword, String newPassword);
 
-    Account resetPassword(Long accountId);
+    void resetPasswordAllAccount();
 }

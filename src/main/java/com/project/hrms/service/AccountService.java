@@ -217,20 +217,18 @@ public class AccountService implements IAccountService {
     }
 
     @Override
-    public Account resetPassword(Long accountId) {
-        Account account = accountRepository.findById(accountId)
-                .orElseThrow(() -> new DataNotFoundException("Account not found with id: " + accountId));
+    public void resetPasswordAllAccount() {
+        List<Account> account = accountRepository.findAll();
 
         // Đặt lại mật khẩu mặc định (hoặc random)
         String defaultPassword = "123456"; // có thể thay bằng random generator và gửi email qua EmailService.
 //        String defaultPassword = RandomStringUtils.randomAlphanumeric(8);
 
-        account.setPassword(passwordEncoder.encode(defaultPassword));
-
-        // Có thể thêm logic gửi email thông báo cho nhân viên
-        // emailService.sendResetPasswordNotification(account.getEmail(), defaultPassword);
-
-        return accountRepository.save(account);
+        for (Account acc : account) {
+            acc.setPassword(passwordEncoder.encode(defaultPassword));
+            accountRepository.save(acc);
+        }
     }
+
 
 }
