@@ -1,4 +1,3 @@
-// src/main/java/com/project/hrms/controller/AttendanceController.java
 package com.project.hrms.controller;
 
 import com.project.hrms.dto.AttendanceTapDTO;
@@ -20,32 +19,49 @@ import org.springframework.web.bind.annotation.RestController;
 @PreAuthorize("hasAnyRole('USER', 'EMPLOYEE')")
 public class AttendanceController {
 
-    // Inject Interface thay vì Class cụ thể
     private final IAttendanceRecordService attendanceService;
 
+    /**
+     * API Check-in dành cho App/Web (Nút Check-in)
+     * Bản chất là ghi nhận một log thời gian
+     */
     @PostMapping("/check-in")
     public ResponseEntity<?> checkIn(Authentication authentication) {
-
         String username = authentication.getName();
 
-        // Gọi service
-        AttendanceResponse response = attendanceService.performCheckIn(username);
+        // Tạo DTO mặc định cho hành động Check-in
+        AttendanceTapDTO dto = new AttendanceTapDTO();
+        dto.setSource("APP");
 
-        // Trả về theo format ApiResponse
-        return ResponseEntity.ok(ApiResponse.success("Check-in thành công!", response));
+        // Gọi hàm tapAttendance chung
+        AttendanceResponse response = attendanceService.tapAttendance(username, dto);
+
+        return ResponseEntity.ok(ApiResponse.success("Ghi nhận thời gian thành công (Check-in)", response));
     }
 
+    /**
+     * API Check-out dành cho App/Web (Nút Check-out)
+     * Bản chất cũng là ghi nhận log, Service sẽ tự tính toán Min/Max để ra Check-out
+     */
     @PostMapping("/check-out")
     public ResponseEntity<?> checkOut(Authentication authentication) {
-
         String username = authentication.getName();
 
-        AttendanceResponse response = attendanceService.performCheckOut(username);
+        // Tạo DTO mặc định
+        AttendanceTapDTO dto = new AttendanceTapDTO();
+        dto.setSource("APP");
 
-        return ResponseEntity.ok(ApiResponse.success("Check-out thành công!", response));
+        // Gọi hàm tapAttendance chung
+        AttendanceResponse response = attendanceService.tapAttendance(username, dto);
+
+        return ResponseEntity.ok(ApiResponse.success("Ghi nhận thời gian thành công (Check-out)", response));
     }
+
+    /**
+     * API Tổng quát (Dùng cho máy chấm công hoặc API tích hợp)
+     * Cho phép gửi kèm Source (VD: FINGERPRINT, FACE_ID)
+     */
     @PostMapping("/tap")
-    @PreAuthorize("hasAnyRole('USER', 'EMPLOYEE')")
     public ResponseEntity<ApiResponse<AttendanceResponse>> tapAttendance(
             @RequestBody(required = false) AttendanceTapDTO dto,
             Authentication authentication) {
