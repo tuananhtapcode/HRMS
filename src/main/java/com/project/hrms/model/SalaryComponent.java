@@ -45,5 +45,8 @@ public class SalaryComponent extends BaseEntity {
 
     private BigDecimal amount;
 
+    // 👇 BỔ SUNG TRƯỜNG NÀY ĐỂ LÀM SOFT DELETE
+    @Column(columnDefinition = "TINYINT(1) DEFAULT 0")
+    private Boolean isDeleted = false;
     // createdAt, updatedAt từ BaseEntity
 }

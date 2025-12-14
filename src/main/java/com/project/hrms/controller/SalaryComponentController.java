@@ -44,4 +44,12 @@ public class SalaryComponentController {
     public ResponseEntity<?> update(@PathVariable Long id, @RequestBody SalaryComponentUpdateDTO dto) {
         return ResponseEntity.ok(ApiResponse.success("Cập nhật salary component thành công!", salaryComponentService.update(id, dto)));
     }
+
+    // API Xóa mềm
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN','PAYROLL_MANAGER')")
+    public ResponseEntity<?> delete(@PathVariable Long id) {
+        salaryComponentService.softDelete(id);
+        return ResponseEntity.ok(ApiResponse.success("Đã xóa thành phần lương thành công!", null));
+    }
 }

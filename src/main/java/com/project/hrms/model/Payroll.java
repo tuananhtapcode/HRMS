@@ -1,5 +1,7 @@
 package com.project.hrms.model;
 
+import com.project.hrms.model.enums.PaymentMethod;
+import com.project.hrms.model.enums.PayrollStatus;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -7,6 +9,7 @@ import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -51,6 +54,45 @@ public class Payroll extends BaseEntity {
     @Column(name = "insurance_amount", precision = 15, scale = 2)
     private BigDecimal insuranceAmount; // Lưu tổng bảo hiểm của kỳ lương này
     // --------------------------------------------------------
+
+    // ==========================
+    // ✅ APPROVE + PAY FIELDS
+    // ==========================
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false, length = 20)
+    private PayrollStatus status = PayrollStatus.CALCULATED;
+
+    @Column(name = "approved_at")
+    private LocalDateTime approvedAt;
+
+    @Column(name = "approved_by")
+    private Long approvedBy;
+
+    @Column(name = "approved_by_name", length = 100)
+    private String approvedByName;
+
+    @Column(name = "paid_at")
+    private LocalDateTime paidAt;
+
+    @Column(name = "paid_by")
+    private Long paidBy;
+
+    @Column(name = "paid_by_name", length = 100)
+    private String paidByName;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "payment_method", length = 30)
+    private PaymentMethod paymentMethod;
+
+    @Column(name = "transaction_ref", length = 100)
+    private String transactionRef;
+
+    @Column(name = "paid_amount", precision = 15, scale = 2)
+    private BigDecimal paidAmount;
+
+    @Column(name = "payment_note", length = 255)
+    private String paymentNote;
+
 
     // items
     @OneToMany(mappedBy = "payroll", cascade = CascadeType.ALL, orphanRemoval = true)

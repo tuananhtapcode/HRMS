@@ -28,14 +28,23 @@ public class SalaryComponentService {
         c.setType(dto.getType());
         c.setDescription(dto.getDescription());
         c.setIsActive(dto.getIsActive() != null ? dto.getIsActive() : true);
-        // 👇 Thêm dòng này
+
+        // Cập nhật amount (Fix lỗi số 0)
         c.setAmount(dto.getAmount() != null ? dto.getAmount() : java.math.BigDecimal.ZERO);
+
         return salaryComponentRepository.save(c);
     }
 
+    // ✅ ĐÃ SỬA: Chỉ giữ 1 hàm list duy nhất, lọc cả type và isDeleted
     public List<SalaryComponent> list(SalaryComponentType type) {
-        if (type == null) return salaryComponentRepository.findAll();
-        return salaryComponentRepository.findByType(type);
+        List<SalaryComponent> all = salaryComponentRepository.findAll();
+
+        return all.stream()
+                // 1. Chỉ lấy bản ghi chưa xóa (isDeleted = false hoặc null)
+                .filter(c -> !Boolean.TRUE.equals(c.getIsDeleted()))
+                // 2. Lọc theo loại (nếu có truyền type)
+                .filter(c -> type == null || c.getType() == type)
+                .toList();
     }
 
     @Transactional
@@ -50,12 +59,30 @@ public class SalaryComponentService {
     public SalaryComponent update(Long id, SalaryComponentUpdateDTO dto) {
         SalaryComponent c = salaryComponentRepository.findById(id)
                 .orElseThrow(() -> new DataNotFoundException("Không tìm thấy salaryComponentId=" + id));
+
         if (dto.getName() != null) c.setName(dto.getName());
         if (dto.getType() != null) c.setType(dto.getType());
         if (dto.getDescription() != null) c.setDescription(dto.getDescription());
         if (dto.getIsActive() != null) c.setIsActive(dto.getIsActive());
-        // 👇 Thêm dòng này để lưu tiền
+
+        // Cập nhật amount (Fix lỗi không lưu tiền)
         if (dto.getAmount() != null) c.setAmount(dto.getAmount());
+
         return salaryComponentRepository.save(c);
+    }
+
+    // ✅ Hàm Soft Delete
+    @Transactional
+    public void softDelete(Long id) {
+        SalaryComponent c = salaryComponentRepository.findById(id)
+                .orElseThrow(() -> new DataNotFoundException("Không tìm thấy ID: " + id));
+
+        // Đánh dấu là đã xóa
+        c.setIsDeleted(true);
+
+        // Tắt luôn active để đảm bảo an toàn
+        c.setIsActive(false);
+
+        salaryComponentRepository.save(c);
     }
 }

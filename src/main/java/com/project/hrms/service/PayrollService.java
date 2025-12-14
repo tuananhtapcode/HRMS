@@ -4,6 +4,7 @@ import com.project.hrms.dto.*;
 import com.project.hrms.exception.DataNotFoundException;
 import com.project.hrms.exception.InvalidParamException;
 import com.project.hrms.model.*;
+import com.project.hrms.model.enums.PayrollStatus;
 import com.project.hrms.model.enums.SalaryComponentType;
 import com.project.hrms.repository.*;
 import lombok.RequiredArgsConstructor;
@@ -197,7 +198,17 @@ public class PayrollService {
         Payroll saved = payrollRepository.save(payroll);
 
         System.out.println(">>> [DEBUG] Saved Payroll ID: " + saved.getPayrollId());
+
+        if (payroll.getPayrollId() != null) {
+            if (payroll.getStatus() == PayrollStatus.APPROVED || payroll.getStatus() == PayrollStatus.PAID) {
+                throw new InvalidParamException("Bảng lương đã duyệt/đã trả. Không được tính lại.");
+            }
+        }
+// và đảm bảo set status lại khi tính xong:
+        payroll.setStatus(PayrollStatus.CALCULATED);
         return toResponseDTO(saved);
+
+
     }
 
     // Helper method mới để thêm Item động và kiểm tra trùng lặp
