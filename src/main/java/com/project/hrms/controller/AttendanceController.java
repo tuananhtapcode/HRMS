@@ -1,6 +1,7 @@
 package com.project.hrms.controller;
 
 import com.project.hrms.dto.AttendanceTapDTO;
+import com.project.hrms.dto.MonthlySummaryDTO;
 import com.project.hrms.response.ApiResponse;
 import com.project.hrms.response.AttendanceResponse;
 import com.project.hrms.service.IAttendanceRecordService;
@@ -8,10 +9,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/attendance")
@@ -77,5 +77,16 @@ public class AttendanceController {
         AttendanceResponse response = attendanceService.tapAttendance(username, dto);
 
         return ResponseEntity.ok(ApiResponse.success("Chấm công thành công", response));
+    }
+
+    // Trong AttendanceController bảng công tổng hợp
+    @GetMapping("/summary")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'HR')")
+    public ResponseEntity<?> getMonthlySummary(
+            @RequestParam int month,
+            @RequestParam int year) {
+
+        List<MonthlySummaryDTO> summary = attendanceService.getMonthlySummary(month, year);
+        return ResponseEntity.ok(ApiResponse.success("Lấy bảng công tổng hợp thành công", summary));
     }
 }

@@ -1,12 +1,14 @@
 package com.project.hrms.service;
 
 import com.project.hrms.dto.AttendanceTapDTO;
+import com.project.hrms.dto.MonthlySummaryDTO;
+import com.project.hrms.model.AttendanceRecord;
 import com.project.hrms.response.AttendanceResponse;
 
 import java.time.LocalDate;
+import java.util.List;
 
-public interface IAttendanceRecordService
-{
+public interface IAttendanceRecordService {
     /**
      * Lấy số phút OT đã ghi cho nhân viên trong ngày.
      */
@@ -30,7 +32,9 @@ public interface IAttendanceRecordService
      */
     int getTotalWorkMinutes(Long employeeId, LocalDate date);
 
-//    AttendanceResponse performCheckIn(String username);
+    //    AttendanceResponse performCheckIn(String username);
 //    AttendanceResponse performCheckOut(String username);
     AttendanceResponse tapAttendance(String username, AttendanceTapDTO dto);
+
+    List<MonthlySummaryDTO> getMonthlySummary(int month, int year);
 }

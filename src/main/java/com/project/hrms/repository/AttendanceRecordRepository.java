@@ -45,5 +45,7 @@ public interface AttendanceRecordRepository extends JpaRepository<AttendanceReco
             @Param("employeeId") Long employeeId,
             @Param("date") LocalDate date
     );
+
+    List<AttendanceRecord> findAllByAttendanceDateBetween(LocalDate start, LocalDate end);
 }
 

@@ -1,6 +1,7 @@
 package com.project.hrms.service;
 
 import com.project.hrms.dto.AttendanceTapDTO;
+import com.project.hrms.dto.MonthlySummaryDTO;
 import com.project.hrms.exception.DataNotFoundException;
 import com.project.hrms.exception.InvalidActionException;
 import com.project.hrms.model.*;
@@ -15,8 +16,12 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.YearMonth;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -266,5 +271,51 @@ public class AttendanceRecordService implements IAttendanceRecordService {
         }
 
         return record;
+    }
+
+
+    @Override
+    public List<MonthlySummaryDTO> getMonthlySummary(int month, int year) {
+        YearMonth yearMonth = YearMonth.of(year, month);
+        LocalDate start = yearMonth.atDay(1);
+        LocalDate end = yearMonth.atEndOfMonth();
+
+        List<AttendanceRecord> allRecords = attendanceRecordRepository
+                .findAllByAttendanceDateBetween(start, end);
+
+        // --- SỬA Ở ĐÂY: Group by ID thay vì Object Employee ---
+        Map<Long, List<AttendanceRecord>> groupedById = allRecords.stream()
+                .collect(Collectors.groupingBy(r -> r.getEmployee().getEmployeeId()));
+
+        List<MonthlySummaryDTO> summaries = new ArrayList<>();
+
+        groupedById.forEach((empId, records) -> {
+            // Lấy thông tin Employee từ record đầu tiên trong list (vì cùng 1 người)
+            Employee emp = records.get(0).getEmployee();
+
+            int workDays = 0;
+            int lateMins = 0;
+            int otMins = 0;
+            int leaveDays = 0;
+
+            for (AttendanceRecord r : records) {
+                if (r.getTotalWorkMinutes() != null && r.getTotalWorkMinutes() > 0) workDays++;
+                if (r.getLateMinutes() != null) lateMins += r.getLateMinutes();
+                if (r.getOvertimeMinutes() != null) otMins += r.getOvertimeMinutes();
+                if (r.getStatus() != null && r.getStatus().name().startsWith("LEAVE")) leaveDays++;
+            }
+
+            summaries.add(MonthlySummaryDTO.builder()
+                    .employeeId(emp.getEmployeeId())
+                    .employeeName(emp.getFullName())
+                    .departmentName(emp.getDepartment() != null ? emp.getDepartment().getName() : "N/A")
+                    .totalWorkDays(workDays)
+                    .totalLateMinutes(lateMins)
+                    .totalOvertimeMinutes(otMins)
+                    .totalLeaveDays(leaveDays)
+                    .build());
+        });
+
+        return summaries;
     }
 }

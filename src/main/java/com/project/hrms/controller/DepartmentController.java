@@ -41,6 +41,7 @@ public class DepartmentController {
         return ResponseEntity.ok(ApiResponse.success("Lấy thống kê cơ cấu phòng ban thành công", stats));
     }
 
+
     @PostMapping
     //synchronized đảm bảo 1 thread tạo phòng ban tại 1 thời điểm duy nhất, ap dung voi create
     public synchronized  ResponseEntity<?> createDepartment(@Valid @RequestBody DepartmentDTO dto,
