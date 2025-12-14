@@ -28,8 +28,6 @@ public class PayrollService {
     private final SalaryComponentRepository salaryComponentRepository;
     private final MonthlyTimesheetRepository monthlyTimesheetRepository;
     private final SystemSettingRepository systemSettingRepository;
-
-    // ✅ THÊM: Inject EmployeeRepository để dùng cho calculateBatch
     private final EmployeeRepository employeeRepository;
 
     // =========================
@@ -120,13 +118,19 @@ public class PayrollService {
                 .subtract(latePenalty)
                 .setScale(2, RoundingMode.HALF_UP);
 
+        System.out.println(">>> [DEBUG] Employee ID: " + dto.getEmployeeId());
+        System.out.println(">>> [DEBUG] Fixed Earnings: " + fixedEarnings);
+        System.out.println(">>> [DEBUG] Total Salary: " + totalSalary);
+
+        // Tính toán Thuế & Bảo hiểm
         BigDecimal personalIncomeTax = totalSalary.multiply(new BigDecimal("0.10"));
         BigDecimal insuranceDeduction = fixedEarnings.multiply(new BigDecimal("0.08"));
 
-        // 12. Save payroll (check for existing payroll)
-        Payroll payroll = payrollRepository.findByEmployee_EmployeeIdAndPayrollPeriod_PayrollPeriodId(dto.getEmployeeId(), dto.getPayrollPeriodId()).orElseGet(Payroll::new);
+        // 12. Save payroll header
+        Payroll payroll = payrollRepository.findByEmployee_EmployeeIdAndPayrollPeriod_PayrollPeriodId(dto.getEmployeeId(), dto.getPayrollPeriodId())
+                .orElseGet(Payroll::new);
+
         if (payroll.getPayrollId() == null) {
-            // Create new payroll if not exists
             Employee empRef = new Employee();
             empRef.setEmployeeId(dto.getEmployeeId());
             payroll.setEmployee(empRef);
@@ -137,80 +141,118 @@ public class PayrollService {
         payroll.setInsuranceAmount(insuranceDeduction);
         payroll.setTotalSalary(totalSalary);
 
-        // Rebuild payroll items (delete and reinsert if necessary)
+        // =====================================================================
+        // [QUAN TRỌNG] XỬ LÝ LOGIC TRÁNH DUPLICATE ENTRY
+        // =====================================================================
+
+        // Bước 1: Nếu đã có items cũ, xóa và FLUSH ngay lập tức để DB sạch sẽ
         if (payroll.getPayrollId() != null) {
             payrollItemRepository.deleteByPayroll_PayrollId(payroll.getPayrollId());
+            payrollItemRepository.flush(); // <--- FIX LỖI 1: Ép buộc xóa trong DB trước khi insert mới
         }
-        payroll.getPayrollItems().clear();
 
-        // Add fixed items
+        // Khởi tạo list mới (hoặc clear list cũ trong memory)
+        if (payroll.getPayrollItems() == null) {
+            payroll.setPayrollItems(new ArrayList<>());
+        } else {
+            payroll.getPayrollItems().clear();
+        }
+
+        // Set dùng để theo dõi các Component ID đã thêm, tránh trùng lặp
+        Set<Long> addedComponentIds = new HashSet<>();
+
+        // Bước 2: Add fixed items (Lương cứng từ Profile)
         for (SalaryProfile sp : profiles) {
             if (sp.getSalaryComponent() == null) continue;
+
+            // Logic kiểm tra trùng: Nếu ID này đã add rồi thì bỏ qua
+            Long compId = sp.getSalaryComponent().getSalaryComponentId();
+            if (addedComponentIds.contains(compId)) {
+                continue;
+            }
+
             PayrollItem item = new PayrollItem();
             item.setPayroll(payroll);
             item.setSalaryComponent(sp.getSalaryComponent());
             item.setAmount(nvl(sp.getAmount()).setScale(2, RoundingMode.HALF_UP));
+
             payroll.getPayrollItems().add(item);
+            addedComponentIds.add(compId); // Đánh dấu đã xử lý
         }
 
-        // Add variable items like OT, unpaid leave deduction, late penalty
+        // Bước 3: Add variable items (Lương động: OT, Phạt...)
         Map<String, SalaryComponent> compMap = loadComponentsByCode(Set.of("OT_PAY", "UNPAID_LEAVE_DEDUCT", "LATE_PENALTY"));
-        if(compMap.containsKey("OT_PAY")) payroll.getPayrollItems().add(buildItem(payroll, compMap.get("OT_PAY"), otPay));
-        if(compMap.containsKey("UNPAID_LEAVE_DEDUCT")) payroll.getPayrollItems().add(buildItem(payroll, compMap.get("UNPAID_LEAVE_DEDUCT"), unpaidDeduct));
-        if(compMap.containsKey("LATE_PENALTY")) payroll.getPayrollItems().add(buildItem(payroll, compMap.get("LATE_PENALTY"), latePenalty));
 
-        // 13. Save payroll
+        // Sử dụng hàm helper để add và check trùng
+        if (compMap.containsKey("OT_PAY"))
+            addDynamicItem(payroll, compMap.get("OT_PAY"), otPay, addedComponentIds);
+
+        if (compMap.containsKey("UNPAID_LEAVE_DEDUCT"))
+            addDynamicItem(payroll, compMap.get("UNPAID_LEAVE_DEDUCT"), unpaidDeduct, addedComponentIds);
+
+        if (compMap.containsKey("LATE_PENALTY"))
+            addDynamicItem(payroll, compMap.get("LATE_PENALTY"), latePenalty, addedComponentIds);
+
+        // 13. Save payroll (Cascade insert items)
         Payroll saved = payrollRepository.save(payroll);
+
+        System.out.println(">>> [DEBUG] Saved Payroll ID: " + saved.getPayrollId());
         return toResponseDTO(saved);
+    }
+
+    // Helper method mới để thêm Item động và kiểm tra trùng lặp
+    private void addDynamicItem(Payroll payroll, SalaryComponent comp, BigDecimal amount, Set<Long> addedIds) {
+        if (comp == null) return;
+
+        // Nếu component này đã tồn tại (do đã thêm ở phần lương cứng hoặc trước đó) -> Bỏ qua
+        if (addedIds.contains(comp.getSalaryComponentId())) {
+            return;
+        }
+
+        PayrollItem item = buildItem(payroll, comp, amount);
+        payroll.getPayrollItems().add(item);
+        addedIds.add(comp.getSalaryComponentId()); // Đánh dấu
     }
 
 
     // =========================
-    // 2) TÍNH LƯƠNG BATCH (SỬA LỖI COMPILER)
+    // 2) TÍNH LƯƠNG BATCH
     // =========================
     @Transactional
     public int calculateBatch(Long periodId, int month, int year) {
-        // Cách đơn giản: Lấy tất cả nhân viên và thử tính lương cho từng người
-        // (Trong thực tế nên query list nhân viên có Timesheet để tối ưu hơn)
         List<Employee> employees = employeeRepository.findAll();
         int count = 0;
-
         for (Employee emp : employees) {
             try {
-                // Tạo DTO request giả lập
                 PayrollCalculateRequestDTO dto = new PayrollCalculateRequestDTO();
                 dto.setEmployeeId(emp.getEmployeeId());
                 dto.setPayrollPeriodId(periodId);
                 dto.setMonth(month);
                 dto.setYear(year);
-
                 calculatePayrollForEmployee(dto);
                 count++;
             } catch (Exception e) {
-                // Bỏ qua nếu nhân viên này không đủ điều kiện (VD: không có timesheet)
-                // Hoặc log lỗi: log.warn("Lỗi tính lương NV {}: {}", emp.getEmployeeId(), e.getMessage());
+                // Log error normally here
+                System.err.println("Error calculating for emp " + emp.getEmployeeId() + ": " + e.getMessage());
             }
         }
         return count;
     }
 
     // =========================
-    // 3) LẤY DANH SÁCH BẢNG LƯƠNG THEO KỲ
+    // 3) LIST & DETAIL
     // =========================
     public Page<PayrollListItemDTO> listPayrollByPeriod(Long periodId, Pageable pageable) {
         return payrollRepository.findPayrollListByPeriod(periodId, pageable);
     }
 
-    // =========================
-    // 4) LẤY CHI TIẾT BẢNG LƯƠNG
-    // =========================
     public PayrollResponseDTO getPayrollDetail(Long payrollId) {
         Payroll p = payrollRepository.findWithItemsByPayrollId(payrollId)
                 .orElseThrow(() -> new DataNotFoundException("Không tìm thấy bảng lương ID=" + payrollId));
         return toResponseDTO(p);
     }
 
-    // ===== Helper Methods (Giữ nguyên) =====
+    // ===== Helper Methods =====
 
     private BigDecimal parseBd(String value, BigDecimal defaultValue) {
         if (value == null || value.trim().isEmpty()) return defaultValue;
@@ -246,23 +288,26 @@ public class PayrollService {
         return item;
     }
 
-
-
     private PayrollResponseDTO toResponseDTO(Payroll payroll) {
         PayrollResponseDTO res = new PayrollResponseDTO();
         res.setPayrollId(payroll.getPayrollId());
         res.setEmployeeId(payroll.getEmployee().getEmployeeId());
         res.setPayrollPeriodId(payroll.getPayrollPeriod().getPayrollPeriodId());
         res.setTotalSalary(nvl(payroll.getTotalSalary()));
-        res.setItems(payroll.getPayrollItems().stream()
-                .map(it -> new PayrollItemResponseDTO(
-                        it.getSalaryComponent().getSalaryComponentId(),
-                        it.getSalaryComponent().getCode(),
-                        it.getSalaryComponent().getName(),
-                        it.getSalaryComponent().getType().name(),
-                        nvl(it.getAmount())
-                ))
-                .collect(Collectors.toList()));
+        res.setPersonalIncomeTax(nvl(payroll.getTaxAmount()));
+        res.setInsuranceDeduction(nvl(payroll.getInsuranceAmount()));
+
+        if (payroll.getPayrollItems() != null) {
+            res.setItems(payroll.getPayrollItems().stream()
+                    .map(it -> new PayrollItemResponseDTO(
+                            it.getSalaryComponent().getSalaryComponentId(),
+                            it.getSalaryComponent().getCode(),
+                            it.getSalaryComponent().getName(),
+                            it.getSalaryComponent().getType().name(),
+                            nvl(it.getAmount())
+                    ))
+                    .collect(Collectors.toList()));
+        }
         return res;
     }
 

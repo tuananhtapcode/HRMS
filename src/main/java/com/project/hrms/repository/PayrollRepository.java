@@ -30,7 +30,7 @@ public interface PayrollRepository extends JpaRepository<Payroll, Long>,
     Optional<Payroll> findWithItemsByPayrollId(Long payrollId);
 
     @Query("""
-   select new com.project.hrms.dto.PayrollListItemDTO(p.payrollId, e.employeeId, e.fullName, p.totalSalary)
+   select new com.project.hrms.dto.PayrollListItemDTO(p.payrollId, e.employeeId, e.fullName, p.totalSalary, p.taxAmount, p.insuranceAmount)
    from Payroll p
    join p.employee e
    where p.payrollPeriod.payrollPeriodId = :periodId

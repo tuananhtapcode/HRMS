@@ -1,5 +1,6 @@
 package com.project.hrms.service;
 
+import com.project.hrms.dto.TimesheetDetailDTO;
 import com.project.hrms.dto.TimesheetSummaryDTO;
 import com.project.hrms.model.Employee;
 import com.project.hrms.model.SystemSetting;
@@ -132,4 +133,77 @@ public class TimesheetService implements ITimesheetService {
                 })
                 .orElse(defaultValue);
     }
+
+    @Override
+    public List<TimesheetDetailDTO.Response> getMonthlyTimesheetDetails(int month, int year, Long departmentId) {
+        LocalDate startDate = LocalDate.of(year, month, 1);
+        LocalDate endDate = startDate.withDayOfMonth(startDate.lengthOfMonth());
+
+        // 1. Lấy danh sách nhân viên (theo phòng ban hoặc tất cả)
+        List<Employee> employees;
+        if (departmentId != null) {
+            employees = employeeRepository.findByDepartment_DepartmentId(departmentId);
+        } else {
+            employees = employeeRepository.findAll();
+        }
+
+        List<TimesheetDetailDTO.Response> result = new ArrayList<>();
+
+        for (Employee emp : employees) {
+            // 2. Lấy list Workday của nhân viên này trong tháng
+            List<Workday> workdays = workdayRepository.findByEmployee_EmployeeIdAndDateBetween(
+                    emp.getEmployeeId(), startDate, endDate);
+
+            // 3. Map sang DTO chi tiết từng ngày
+            List<TimesheetDetailDTO.DailyItem> dailyItems = workdays.stream()
+                    .map(w -> TimesheetDetailDTO.DailyItem.builder()
+                            .date(w.getDate())
+                            .status(w.getAttendanceStatus()) // Đây là cái bạn cần: PRESENT, LATE...
+                            .hoursWorked(w.getHoursWorked())
+                            .hoursOvertime(w.getHoursOvertime())
+                            .build())
+                    .toList();
+
+            // 4. Gom vào DTO của nhân viên
+            result.add(TimesheetDetailDTO.Response.builder()
+                    .employeeId(emp.getEmployeeId())
+                    .employeeCode(emp.getEmployeeCode())
+                    .fullName(emp.getFullName())
+                    .dailyRecords(dailyItems)
+                    .build());
+        }
+
+        return result;
+    }
+    @Override
+    public TimesheetDetailDTO.Response getMyMonthlyTimesheet(int month, int year, Long currentEmployeeId) {
+        LocalDate startDate = LocalDate.of(year, month, 1);
+        LocalDate endDate = startDate.withDayOfMonth(startDate.lengthOfMonth());
+
+        // 1. Lấy thông tin nhân viên (để hiển thị tên, mã...)
+        Employee emp = employeeRepository.findById(currentEmployeeId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy nhân viên"));
+
+        // 2. Lấy dữ liệu Workday của CHÍNH NHÂN VIÊN ĐÓ trong tháng
+        List<Workday> workdays = workdayRepository.findByEmployee_EmployeeIdAndDateBetween(
+                currentEmployeeId, startDate, endDate);
+
+        // 3. Map sang DTO chi tiết (Daily Items)
+        List<TimesheetDetailDTO.DailyItem> dailyItems = workdays.stream()
+                .map(w -> TimesheetDetailDTO.DailyItem.builder()
+                        .date(w.getDate())
+                        .status(w.getAttendanceStatus())
+                        .hoursWorked(w.getHoursWorked())
+                        .hoursOvertime(w.getHoursOvertime())
+                        .build())
+                .toList();
+
+        // 4. Trả về kết quả
+        return TimesheetDetailDTO.Response.builder()
+                .employeeId(emp.getEmployeeId())
+                .employeeCode(emp.getEmployeeCode())
+                .fullName(emp.getFullName())
+                .dailyRecords(dailyItems)
+                .build();
+    }// Status quan trọng: PRESENT, LATE, LEAVE_PAID...
 }

@@ -11,5 +11,8 @@ public class PayrollResponseDTO {
     private Long employeeId;
     private Long payrollPeriodId;
     private BigDecimal totalSalary;
+    // ✅ THÊM 2 TRƯỜNG NÀY ĐỂ SHOW TRONG MODAL CHI TIẾT
+    private BigDecimal personalIncomeTax;
+    private BigDecimal insuranceDeduction;
     private List<PayrollItemResponseDTO> items;
 }
