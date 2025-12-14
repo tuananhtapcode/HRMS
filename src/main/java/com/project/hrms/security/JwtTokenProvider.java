@@ -1,6 +1,7 @@
 package com.project.hrms.security;
 
 import com.project.hrms.model.Account; // <-- Import Account của bạn
+import com.project.hrms.security.model.CustomUserDetails;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
 import jakarta.annotation.PostConstruct;
@@ -36,9 +37,10 @@ public class JwtTokenProvider {
 
     // --- HÀM NÀY ĐÃ ĐƯỢC SỬA ---
     public String generateToken(Authentication authentication) {
-        // 1. Ép kiểu về Account (Thay vì UserDetails chung chung)
-        // Vì Account của bạn đã implements UserDetails rồi
-        Account account = (Account) authentication.getPrincipal();
+        CustomUserDetails userDetails =
+                (CustomUserDetails) authentication.getPrincipal();
+
+        Account account = userDetails.getAccount();
 
         Date now = new Date();
         Date expiryDate = new Date(now.getTime() + jwtExpirationInMs);
