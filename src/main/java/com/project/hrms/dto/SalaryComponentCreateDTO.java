@@ -4,6 +4,7 @@ import com.project.hrms.model.enums.SalaryComponentType;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
+import java.math.BigDecimal; // Nhớ import
 
 @Data
 public class SalaryComponentCreateDTO {
@@ -12,4 +13,7 @@ public class SalaryComponentCreateDTO {
     @NotNull private SalaryComponentType type; // earning/deduction
     private String description;
     private Boolean isActive = true;
+
+    // 👇 BỔ SUNG TRƯỜNG NÀY (Có thể thêm validate nếu muốn)
+    private BigDecimal amount;
 }

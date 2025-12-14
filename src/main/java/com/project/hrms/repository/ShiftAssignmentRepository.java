@@ -23,10 +23,11 @@ public interface ShiftAssignmentRepository extends JpaRepository<ShiftAssignment
      * Dùng để lấy lịch làm việc của nhân viên trong một khoảng thời gian
      * (ví dụ: lấy lịch làm việc tháng 11)
      */
-    List<ShiftAssignment> findByEmployee_EmployeeIdAndAssignmentDateBetween(
+    List<ShiftAssignment> findByEmployee_EmployeeIdAndAssignmentDateBetweenAndIsApproved(
             Long employeeId,
             LocalDate startDate,
-            LocalDate endDate
+            LocalDate endDate,
+            Boolean isApproved
     );
 
     // Trong interface ShiftAssignmentRepository
@@ -43,5 +44,8 @@ public interface ShiftAssignmentRepository extends JpaRepository<ShiftAssignment
     // --- THÊM ĐOẠN NÀY VÀO REPOSITORY ---
 
     // Tìm tất cả các ca làm việc nằm trong khoảng ngày start và end
+
     List<ShiftAssignment> findByAssignmentDateBetween(LocalDate startDate, LocalDate endDate);
+
+    List<ShiftAssignment> findByIsApprovedFalseOrderByAssignmentDateAsc();
 }

@@ -99,4 +99,24 @@ public class ShiftAssignmentController {
         List<ShiftAssignmentDTO> list = assignmentService.getAllAssignments(startDate, endDate);
         return ResponseEntity.ok(ApiResponse.success("Lấy dữ liệu phân ca thành công", list));
     }
+    // API: Admin duyệt ca (Biến false thành true)
+    // PUT /api/v1/my-shifts/assignments/{id}/approve
+    @PutMapping("/assignments/{id}/approve")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
+    public ResponseEntity<ApiResponse<Void>> approveShift(@PathVariable Long id) {
+
+        assignmentService.approveAssignment(id);
+
+        return ResponseEntity.ok(ApiResponse.success("Đã duyệt đăng ký ca thành công!", null));
+    }
+    // API: Lấy danh sách đơn chưa duyệt
+    // GET /api/v1/shifts/assignments/pending
+    @GetMapping("/assignments/pending")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
+    public ResponseEntity<ApiResponse<List<ShiftAssignmentDTO>>> getPendingAssignments() {
+
+        List<ShiftAssignmentDTO> pendingList = assignmentService.getPendingAssignments();
+
+        return ResponseEntity.ok(ApiResponse.success("Lấy danh sách đơn chưa duyệt thành công", pendingList));
+    }
 }
