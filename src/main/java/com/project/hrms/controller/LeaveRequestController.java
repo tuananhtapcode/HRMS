@@ -3,15 +3,14 @@ package com.project.hrms.controller;
 import com.project.hrms.dto.RequestApproveDTO;
 import com.project.hrms.dto.LeaveRequestDTO;
 import com.project.hrms.model.enums.RequestStatus;
-import com.project.hrms.response.ApiResponse;
 import com.project.hrms.response.LeaveRequestResponse;
 import com.project.hrms.service.ILeaveRequestService;
-import com.project.hrms.service.LeaveRequestService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -21,7 +20,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class LeaveRequestController {
 
-    private final LeaveRequestService leaveRequestService;
+    private final ILeaveRequestService leaveRequestService;
 
     /**
      * ✅ Tạo đơn nghỉ phép
@@ -29,7 +28,7 @@ public class LeaveRequestController {
      * - Admin/Manager: tạo hộ nhân viên khác
      */
     @PostMapping
-    public LeaveRequestResponse create(@RequestBody LeaveRequestDTO dto) {
+    public LeaveRequestResponse create(@Valid @RequestBody LeaveRequestDTO dto) {
         return leaveRequestService.createRequest(dto);
     }
 
@@ -42,6 +41,7 @@ public class LeaveRequestController {
     @PutMapping("/{id}")
     public LeaveRequestResponse update(
             @PathVariable Long id,
+            @Valid
             @RequestBody LeaveRequestDTO dto
     ) {
         return leaveRequestService.updateRequest(id, dto);
@@ -151,5 +151,65 @@ public class LeaveRequestController {
             @RequestParam(required = false) RequestStatus status
     ) {
         return leaveRequestService.countRequestsByEmployee(employeeId, status);
+    }
+
+    @GetMapping("/count/pending")
+    public long countPending() {
+        return leaveRequestService.countPending();
+    }
+
+    @GetMapping("/count/approved")
+    public long countApproved() {
+        return leaveRequestService.countApproved();
+    }
+
+    @GetMapping("/count/rejected")
+    public long countRejected() {
+        return leaveRequestService.countRejected();
+    }
+
+    @GetMapping("/count/cancelled")
+    public long countCancelled() {
+        return leaveRequestService.countCancelled();
+    }
+
+    /* ================= ADMIN / MANAGER ================= */
+
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
+    @GetMapping("/pending")
+    public Page<LeaveRequestResponse> getAllPending(Pageable pageable) {
+        return leaveRequestService.getAllPending(pageable);
+    }
+
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
+    @GetMapping("/approved")
+    public Page<LeaveRequestResponse> getAllApproved(Pageable pageable) {
+        return leaveRequestService.getAllApproved(pageable);
+    }
+
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
+    @GetMapping("/rejected")
+    public Page<LeaveRequestResponse> getAllRejected(Pageable pageable) {
+        return leaveRequestService.getAllRejected(pageable);
+    }
+
+    /* ================= EMPLOYEE ================= */
+
+    @PreAuthorize("hasRole('EMPLOYEE')")
+    @GetMapping("/my/pending")
+    public Page<LeaveRequestResponse> getMyPending(Pageable pageable) {
+        return leaveRequestService.getMyPending(pageable);
+    }
+
+    @PreAuthorize("hasRole('EMPLOYEE')")
+    @GetMapping("/my/approved")
+    public Page<LeaveRequestResponse> getMyApproved(Pageable pageable) {
+        return leaveRequestService.getMyApproved(pageable);
+    }
+
+    @PreAuthorize("hasRole('EMPLOYEE')")
+    @GetMapping("/my/rejected")
+    public Page<LeaveRequestResponse> getMyRejected(Pageable pageable) {
+        return leaveRequestService.getMyRejected(pageable);
     }
 }

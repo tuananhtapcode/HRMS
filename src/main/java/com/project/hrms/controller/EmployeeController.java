@@ -11,6 +11,7 @@ import com.project.hrms.model.enums.Level;
 import com.project.hrms.response.ApiResponse;
 import com.project.hrms.response.EmployeeListResponse;
 import com.project.hrms.response.EmployeeResponse;
+import com.project.hrms.service.AuthService;
 import com.project.hrms.service.IEmployeeService;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
@@ -42,7 +43,7 @@ import static org.springframework.http.HttpStatus.BAD_REQUEST;
 public class EmployeeController {
 
     private final IEmployeeService employeeService;
-
+    private final AuthService authService;
     // ===============================
     // 1) CREATE EMPLOYEE + ACCOUNT
     // ===============================
@@ -255,4 +256,10 @@ public class EmployeeController {
         return EmployeeStatus.values();
     }
 
+    @GetMapping("/me")
+    public ResponseEntity<?> getMyInfo() {
+        Long currentUserId = authService.getCurrentUserId(); // lấy từ token
+        EmployeeResponse employee = employeeService.getDetail(currentUserId);
+        return ResponseEntity.ok(ApiResponse.success("Thông tin nhân viên hiện tại", employee));
+    }
 }

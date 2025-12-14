@@ -1,5 +1,6 @@
 package com.project.hrms.dto;
 
+import com.project.hrms.model.enums.LeaveType;
 import lombok.AllArgsConstructor;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.project.hrms.model.enums.RequestStatus;
@@ -19,8 +20,8 @@ import java.time.LocalDate;
 public class LeaveRequestDTO {
     private Long employeeId;
 
-    @NotBlank(message = "Loại nghỉ không được để trống")
-    private String leaveType;
+    @NotNull(message = "Loại nghỉ không được để trống")
+    private LeaveType leaveType;
 
     @NotNull(message = "Ngày bắt đầu không được để trống")
     @JsonFormat(pattern = "yyyy-MM-dd")

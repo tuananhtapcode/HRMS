@@ -5,32 +5,19 @@ import com.project.hrms.exception.DataNotFoundException;
 import com.project.hrms.exception.InvalidActionException;
 import com.project.hrms.model.*;
 import com.project.hrms.model.enums.AttendanceStatus;
-import com.project.hrms.repository.AccountRepository;
-import com.project.hrms.repository.AttendanceRecordRepository;
-import com.project.hrms.repository.ShiftAssignmentRepository;
+import com.project.hrms.model.enums.LeaveType;
 import com.project.hrms.model.enums.RequestStatus;
 import com.project.hrms.repository.*;
 import com.project.hrms.response.AttendanceResponse;
-import com.project.hrms.service.AttendanceRecordService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-
-import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.Comparator;
 import java.util.List;
-import java.util.Optional;
 
-/**
- * Implementation cho AttendanceRecordService.
- * - Cập nhật overtime_minutes một cách atomic (pessimistic lock).
- * - Tự tạo attendance record khi không tồn tại (hợp lý cho OT).
- * - Áp dụng cap 480 phút/ngày.
- */
 @Service
 @RequiredArgsConstructor
 public class AttendanceRecordService implements IAttendanceRecordService {
@@ -40,11 +27,10 @@ public class AttendanceRecordService implements IAttendanceRecordService {
     private final AttendanceRecordRepository attendanceRecordRepository;
     private final AttendanceLogRepository logRepository;
     private final OvertimeRequestRepository otRequestRepository;
+    private final LeaveRequestRepository leaveRequestRepository;
 
-    // cap OT tối đa 8 giờ = 480 phút
-    private static final int MAX_OT_MINUTES_PER_DAY = 8 * 60;
+    private static final int MAX_OT_MINUTES_PER_DAY = 8 * 60; // 8 tiếng OT max
 
-    //laySoPhutTangCa
     @Override
     public int getOvertimeMinutes(Long employeeId, LocalDate date) {
         return attendanceRecordRepository
@@ -53,41 +39,30 @@ public class AttendanceRecordService implements IAttendanceRecordService {
                 .orElse(0);
     }
 
-    //congPhutTangCa
     @Override
     @Transactional
     public int addOvertimeMinutes(Long employeeId, LocalDate date, int minutesToAdd) {
-
+        // Hàm này dùng cho HR chỉnh sửa thủ công nếu cần
         AttendanceRecord record = attendanceRecordRepository
-                .findByEmployeeIdAndAttendanceDateForUpdate(employeeId, date)
-                .orElseThrow(() ->
-                        new IllegalStateException(
-                                "Không tìm thấy attendance record cho ngày " + date +
-                                        ". Không thể cộng OT khi chưa có ca làm việc."
-                        )
-                );
+                .findFirstByEmployee_EmployeeIdAndAttendanceDate(employeeId, date)
+                .orElseThrow(() -> new InvalidActionException("Không tìm thấy bảng công ngày " + date));
 
         int current = record.getOvertimeMinutes() == null ? 0 : record.getOvertimeMinutes();
         int canAdd = Math.max(0, MAX_OT_MINUTES_PER_DAY - current);
         int toAdd = Math.min(canAdd, Math.max(0, minutesToAdd));
 
-        if (toAdd <= 0) return 0;
-
-        record.setOvertimeMinutes(current + toAdd);
-        attendanceRecordRepository.save(record);
+        if (toAdd > 0) {
+            record.setOvertimeMinutes(current + toAdd);
+            attendanceRecordRepository.save(record);
+        }
         return toAdd;
     }
 
-    // =========================================================================
-    // PHẦN 1: LOGIC CŨ (LEGACY) - GIỮ NGUYÊN ĐỂ LEADER TEST
-    // =========================================================================
-    //truPhutTangCa
     @Override
     @Transactional
     public int subtractOvertimeMinutes(Long employeeId, LocalDate date, int minutesToSubtract) {
-
         AttendanceRecord record = attendanceRecordRepository
-                .findByEmployeeIdAndAttendanceDateForUpdate(employeeId, date)
+                .findFirstByEmployee_EmployeeIdAndAttendanceDate(employeeId, date)
                 .orElse(null);
 
         if (record == null) return 0;
@@ -100,7 +75,6 @@ public class AttendanceRecordService implements IAttendanceRecordService {
         return toSubtract;
     }
 
-    //layTongSoPhutLamViecCua1Nhanvien
     @Override
     public int getTotalWorkMinutes(Long employeeId, LocalDate date) {
         return attendanceRecordRepository
@@ -109,89 +83,6 @@ public class AttendanceRecordService implements IAttendanceRecordService {
                 .orElse(0);
     }
 
-
-    //checkIn
-    @Override
-    @org.springframework.transaction.annotation.Transactional
-    public AttendanceResponse performCheckIn(String username) {
-        LocalDateTime now = LocalDateTime.now();
-        LocalDate today = now.toLocalDate();
-
-        Account account = accountRepository.findByUsername(username)
-                .orElseThrow(() -> new DataNotFoundException("Tài khoản không tồn tại"));
-        Employee employee = account.getEmployee();
-
-        List<ShiftAssignment> assignments = assignmentRepository
-                .findAllByEmployee_EmployeeIdAndAssignmentDate(employee.getEmployeeId(), today);
-
-        if (assignments.isEmpty()) throw new InvalidActionException("Hôm nay không có lịch làm việc!");
-
-        ShiftAssignment assignment = assignments.get(0);
-        Shift shift = assignment.getShift();
-
-        Optional<AttendanceRecord> existingRecords = attendanceRecordRepository.findFirstByEmployee_EmployeeIdAndAttendanceDate(employee.getEmployeeId(), today);
-        if (!existingRecords.isEmpty()) {
-            throw new InvalidActionException("Bạn đã Check-in ngày hôm nay rồi (Logic Cũ).");
-        }
-
-        AttendanceStatus status = AttendanceStatus.PRESENT;
-        long lateMinutes = 0;
-        LocalDateTime shiftStartDateTime = today.atTime(shift.getStartTime());
-        LocalDateTime graceTime = shiftStartDateTime.plusMinutes(shift.getGraceMinutes());
-
-        if (now.isAfter(graceTime)) {
-            status = AttendanceStatus.LATE;
-            lateMinutes = ChronoUnit.MINUTES.between(shiftStartDateTime, now);
-        }
-
-        AttendanceRecord record = new AttendanceRecord();
-        record.setEmployee(employee);
-        record.setShift(shift);
-        record.setAttendanceDate(today);
-        record.setCheckInTime(now);
-        record.setStatus(status);
-        record.setLateMinutes((int) lateMinutes);
-
-        AttendanceRecord savedRecord = attendanceRecordRepository.save(record);
-        return AttendanceResponse.fromEntity(savedRecord);
-    }
-
-    //checkOut
-    @Override
-    @Transactional
-    public AttendanceResponse performCheckOut(String username) {
-        LocalDateTime now = LocalDateTime.now();
-        LocalDate today = now.toLocalDate();
-
-        Account account = accountRepository.findByUsername(username)
-                .orElseThrow(() -> new DataNotFoundException("Account not found"));
-        Employee employee = account.getEmployee();
-
-        Optional<AttendanceRecord> records = attendanceRecordRepository.findFirstByEmployee_EmployeeIdAndAttendanceDate(employee.getEmployeeId(), today);
-
-        if (records.isEmpty()) {
-            throw new InvalidActionException("Chưa Check-in (Logic Cũ).");
-        }
-        AttendanceRecord record = records.get();
-
-        if (record.getCheckOutTime() != null) {
-            throw new InvalidActionException("Đã Check-out rồi (Logic Cũ).");
-        }
-
-        record.setCheckOutTime(now);
-
-        long workMinutes = ChronoUnit.MINUTES.between(record.getCheckInTime(), now);
-        record.setTotalWorkMinutes((int) Math.max(0, workMinutes));
-
-        AttendanceRecord savedRecord = attendanceRecordRepository.save(record);
-        return AttendanceResponse.fromEntity(savedRecord);
-    }
-
-    // =========================================================================
-    // PHẦN 2: LOGIC MỚI (SMART TAP) - MIN/MAX ALGORITHM
-    // =========================================================================
-
-    //quetChamCong
     @Override
     @Transactional
     public AttendanceResponse tapAttendance(String username, AttendanceTapDTO dto) {
@@ -202,97 +93,59 @@ public class AttendanceRecordService implements IAttendanceRecordService {
                 .orElseThrow(() -> new DataNotFoundException("User not found"));
         Employee employee = account.getEmployee();
 
-        List<ShiftAssignment> assignments = assignmentRepository.findAllByEmployee_EmployeeIdAndAssignmentDate(employee.getEmployeeId(), today);
-        if (assignments.isEmpty()) throw new InvalidActionException("No shift assigned today");
+        List<ShiftAssignment> assignments = assignmentRepository
+                .findAllByEmployee_EmployeeIdAndAssignmentDate(employee.getEmployeeId(), today);
 
-        // 1. [QUAN TRỌNG] Lưu log và FLUSH ngay lập tức để DB có dữ liệu trước khi tính toán
+        if (assignments.isEmpty()) {
+            throw new InvalidActionException("Hôm nay nhân viên không có lịch làm việc.");
+        }
+
+        // 1. Lưu log thô
         AttendanceLog newLog = new AttendanceLog();
         newLog.setEmployee(employee);
         newLog.setTime(now);
         newLog.setSource(dto.getSource());
-        logRepository.saveAndFlush(newLog); // saveAndFlush để đồng bộ dữ liệu ngay
+        logRepository.saveAndFlush(newLog);
 
-        // 2. Tính toán lại
+        // 2. Tính toán lại toàn bộ logic trong ngày
         return recalculateDailyAttendance(employee, today, assignments);
     }
 
-    //tinhLaiChamCongTrongNgay
     private AttendanceResponse recalculateDailyAttendance(Employee employee, LocalDate date, List<ShiftAssignment> assignments) {
-        LocalDateTime startSearch = date.atStartOfDay();
-        LocalDateTime endSearch = date.plusDays(1).atTime(12, 0);
-
-        // 1. Lấy Logs và Records hiện có
+        // Lấy Logs từ 00:00 ngày hiện tại đến 12:00 trưa hôm sau (để cover ca đêm)
         List<AttendanceLog> logs = logRepository.findByEmployee_EmployeeIdAndTimeBetweenOrderByTimeAsc(
-                employee.getEmployeeId(), startSearch, endSearch);
+                employee.getEmployeeId(), date.atStartOfDay(), date.plusDays(1).atTime(12, 0)
+        );
 
-        List<AttendanceRecord> existingRecords =
-                attendanceRecordRepository.findByEmployee_EmployeeIdAndAttendanceDate(
-                        employee.getEmployeeId(), date
-                );
+        List<AttendanceRecord> existingRecords = attendanceRecordRepository
+                .findByEmployee_EmployeeIdAndAttendanceDate(employee.getEmployeeId(), date);
 
-        AttendanceRecord lastSavedRecord = null;
-
-        // 2. Lấy OT Approved
         List<OvertimeRequest> approvedOts = otRequestRepository.findByEmployeeIdAndStatusAndDateBetween(
                 employee.getEmployeeId(), RequestStatus.APPROVED, date, date
         );
 
-        // 3. Duyệt qua từng ca để tính toán
+        List<LeaveRequest> approvedLeaves = leaveRequestRepository.findByEmployeeIdAndStatusAndDateBetween(
+                employee.getEmployeeId(), RequestStatus.APPROVED, date, date
+        );
+
+        AttendanceRecord lastSavedRecord = null;
         for (ShiftAssignment assignment : assignments) {
-            AttendanceRecord record = processSingleShift(assignment, logs, date, approvedOts, existingRecords);
+            AttendanceRecord record = processSingleShift(assignment, logs, date, approvedOts, existingRecords, approvedLeaves);
             if (record != null) {
-                lastSavedRecord = attendanceRecordRepository.save(record); // Save lúc này hoạt động như Update
+                lastSavedRecord = attendanceRecordRepository.save(record);
             }
         }
-
         return lastSavedRecord != null ? AttendanceResponse.fromEntity(lastSavedRecord) : null;
     }
 
-    //xuLyMotCaLamViec
     private AttendanceRecord processSingleShift(ShiftAssignment assignment,
                                                 List<AttendanceLog> logs,
                                                 LocalDate date,
                                                 List<OvertimeRequest> approvedOts,
-                                                List<AttendanceRecord> existingRecords) {
+                                                List<AttendanceRecord> existingRecords,
+                                                List<LeaveRequest> approvedLeaves) {
         Shift shift = assignment.getShift();
 
-        // 1. Xác định khung giờ CHUẨN
-        LocalDateTime shiftStart = date.atTime(shift.getStartTime());
-        LocalDateTime shiftEnd = date.atTime(shift.getEndTime());
-        if (shift.getEndTime().isBefore(shift.getStartTime())) shiftEnd = shiftEnd.plusDays(1);
-
-        // 2. Tính toán GIỜ KẾT THÚC HỢP LỆ (Valid End Time)
-        // Mặc định là hết ca (Shift End)
-        LocalDateTime validEndTime = shiftEnd;
-
-        Double totalOtHours = 0.0;
-        for (OvertimeRequest ot : approvedOts) {
-            if (ot.getTotalHours() != null) {
-                totalOtHours += ot.getTotalHours();
-            }
-        }
-
-        long otMinutes = (long) (totalOtHours * 60);
-        validEndTime = validEndTime.plusMinutes(otMinutes);
-
-        // --- TÌM LOG (Min-Max) ---
-        // Window tìm kiếm vẫn để rộng (để bắt log), nhưng tính toán sẽ bị cắt theo validEndTime
-        LocalDateTime windowStart = shiftStart.minusHours(4);
-        LocalDateTime windowEnd = validEndTime.plusHours(6); // Vẫn tìm rộng ra để bắt log
-
-        AttendanceLog minLog = null;
-        AttendanceLog maxLog = null;
-
-        for (AttendanceLog log : logs) {
-            if (!log.getTime().isBefore(windowStart) && !log.getTime().isAfter(windowEnd)) {
-                if (minLog == null || log.getTime().isBefore(minLog.getTime())) minLog = log;
-                if (maxLog == null || log.getTime().isAfter(maxLog.getTime())) maxLog = log;
-            }
-        }
-
-        if (minLog == null) return null;
-
-        // --- UPDATE RECORD ---
         AttendanceRecord record = existingRecords.stream()
                 .filter(r -> r.getShift().getShiftId().equals(shift.getShiftId()))
                 .findFirst()
@@ -304,84 +157,114 @@ public class AttendanceRecordService implements IAttendanceRecordService {
             record.setAttendanceDate(date);
         }
 
+        // --- XỬ LÝ NGHỈ PHÉP (Priority 1) ---
+        LeaveRequest leaveForDay = approvedLeaves.stream()
+                .filter(l -> !date.isBefore(l.getStartDate()) && !date.isAfter(l.getEndDate()))
+                .findFirst()
+                .orElse(null);
+
+        if (leaveForDay != null) {
+            // Nếu nghỉ phép, set trạng thái và return luôn, không tính log
+            if (leaveForDay.getLeaveType() == LeaveType.PAID) {
+                record.setStatus(AttendanceStatus.LEAVE_PAID);
+                int standardMins = (int) ChronoUnit.MINUTES.between(shift.getStartTime(), shift.getEndTime());
+                int breakMins = shift.getBreakMinutes() == null ? 0 : shift.getBreakMinutes();
+                record.setTotalWorkMinutes(Math.max(0, standardMins - breakMins));
+            } else {
+                record.setStatus(AttendanceStatus.LEAVE_UNPAID);
+                record.setTotalWorkMinutes(0);
+            }
+            // Reset các thông số thực tế
+            record.setCheckInTime(null);
+            record.setCheckOutTime(null);
+            record.setLateMinutes(0);
+            record.setOvertimeMinutes(0);
+            return record;
+        }
+
+        // --- TÍNH TOÁN KHUNG GIỜ ---
+        LocalDateTime shiftStart = date.atTime(shift.getStartTime());
+        LocalDateTime shiftEnd = date.atTime(shift.getEndTime());
+        if (shift.getEndTime().isBefore(shift.getStartTime())) {
+            shiftEnd = shiftEnd.plusDays(1);
+        }
+
+        double approvedOtHours = approvedOts.stream()
+                .mapToDouble(OvertimeRequest::getTotalHours)
+                .sum();
+        int approvedOtMinutes = (int) (approvedOtHours * 60);
+
+        LocalDateTime validEndTime = shiftEnd.plusMinutes(approvedOtMinutes);
+
+        // Window quét log: ShiftStart - 4h đến ValidEndTime + 2h
+        LocalDateTime windowStart = shiftStart.minusHours(4);
+        LocalDateTime windowEnd = validEndTime.plusHours(2);
+
+        // --- LỌC LOGS ---
+        AttendanceLog minLog = null;
+        AttendanceLog maxLog = null;
+        for (AttendanceLog log : logs) {
+            if (!log.getTime().isBefore(windowStart) && !log.getTime().isAfter(windowEnd)) {
+                if (minLog == null || log.getTime().isBefore(minLog.getTime())) minLog = log;
+                if (maxLog == null || log.getTime().isAfter(maxLog.getTime())) maxLog = log;
+            }
+        }
+
+        // --- TÍNH TOÁN TRẠNG THÁI ---
+        if (minLog == null) {
+            record.setStatus(AttendanceStatus.ABSENT);
+            record.setCheckInTime(null);
+            record.setCheckOutTime(null);
+            record.setTotalWorkMinutes(0);
+            record.setOvertimeMinutes(0);
+            record.setLateMinutes(0);
+            return record;
+        }
+
         record.setCheckInTime(minLog.getTime());
 
+        long late = ChronoUnit.MINUTES.between(shiftStart, minLog.getTime());
+        record.setLateMinutes((int) Math.max(0, late));
+
+        if (late > shift.getGraceMinutes()) {
+            record.setStatus(AttendanceStatus.LATE);
+        } else {
+            record.setStatus(AttendanceStatus.PRESENT);
+        }
+
+        // --- TÍNH GIỜ LÀM VÀ OT ---
         if (maxLog != null && !maxLog.getId().equals(minLog.getId())) {
             record.setCheckOutTime(maxLog.getTime());
-        } else {
-            record.setCheckOutTime(null);
-        }
 
-        // [QUAN TRỌNG] Truyền shiftStart và validEndTime xuống để tính toán chuẩn
-        calculateMetricsWithCap(record, shiftStart, validEndTime, shift.getBreakMinutes());
+            // Cắt trần giờ ra
+            LocalDateTime effectiveOut = record.getCheckOutTime().isAfter(validEndTime) ? validEndTime : record.getCheckOutTime();
+
+            long rawWorkMinutes = ChronoUnit.MINUTES.between(record.getCheckInTime(), effectiveOut);
+
+            int breakMinutes = (shift.getBreakMinutes() != null) ? shift.getBreakMinutes() : 0;
+            // Trừ break nếu làm đủ lâu (ví dụ > 4h)
+            if (rawWorkMinutes >= 240 && breakMinutes > 0) {
+                rawWorkMinutes = Math.max(0, rawWorkMinutes - breakMinutes);
+            }
+
+            record.setTotalWorkMinutes((int) rawWorkMinutes);
+
+            // Tính OT
+            long standardShiftDuration = ChronoUnit.MINUTES.between(shiftStart, shiftEnd) - breakMinutes;
+            if (rawWorkMinutes > standardShiftDuration) {
+                int extra = (int) (rawWorkMinutes - standardShiftDuration);
+                // OT được tính = Min(Thời gian làm dư, Thời gian được duyệt)
+                record.setOvertimeMinutes(Math.min(extra, approvedOtMinutes));
+            } else {
+                record.setOvertimeMinutes(0);
+            }
+        } else {
+            // Chưa CheckOut
+            record.setCheckOutTime(null);
+            record.setTotalWorkMinutes(0);
+            record.setOvertimeMinutes(0);
+        }
 
         return record;
-    }
-
-    //tinhCongVaGioiHanGioLam
-    // Hàm tính toán mới: Áp dụng Capping (Chốt chặn)
-    private void calculateMetricsWithCap(AttendanceRecord record,
-                                         LocalDateTime shiftStart,
-                                         LocalDateTime validEndTime,
-                                         Integer breakMinutes) {
-
-        // 1. Tính Late (Không đổi)
-        if (record.getCheckInTime() != null) {
-            long late = ChronoUnit.MINUTES.between(shiftStart, record.getCheckInTime());
-            if (late > 0) {
-                record.setLateMinutes((int) late);
-                record.setStatus(AttendanceStatus.LATE);
-            } else {
-                record.setLateMinutes(0);
-                record.setStatus(AttendanceStatus.PRESENT);
-            }
-        } else {
-            record.setStatus(AttendanceStatus.ABSENT);
-            record.setTotalWorkMinutes(0);
-            return;
-        }
-
-        // 2. Tính Total Work Minutes (CÓ FIX LOGIC)
-        if (record.getCheckOutTime() != null) {
-            LocalDateTime actualCheckIn = record.getCheckInTime();
-            LocalDateTime actualCheckOut = record.getCheckOutTime();
-
-            // A. Chốt chặn giờ vào (Nếu đến sớm quá 8:00 cũng chỉ tính từ 8:00)
-            // Tùy policy công ty, thường thì đến sớm không tính công, đến muộn thì tính theo giờ thực
-            LocalDateTime effectiveCheckIn = actualCheckIn.isBefore(shiftStart) ? shiftStart : actualCheckIn;
-
-            // B. Chốt chặn giờ ra (KEY FIX): Không được tính quá (ShiftEnd + OT)
-            LocalDateTime effectiveCheckOut = actualCheckOut;
-            if (actualCheckOut.isAfter(validEndTime)) {
-                effectiveCheckOut = validEndTime; // Cắt bớt phần thừa
-            }
-            // --- THÊM ĐOẠN NÀY ĐỂ DEBUG ---
-            System.out.println("DEBUG CHECK:");
-            System.out.println("Ca bat dau: " + shiftStart);
-            System.out.println("Ca ket thuc (Limit): " + validEndTime);
-            System.out.println("Thuc te Vao: " + actualCheckIn + " -> Chot Vao: " + effectiveCheckIn);
-            System.out.println("Thuc te Ra: " + actualCheckOut + " -> Chot Ra: " + effectiveCheckOut);
-// -----------------------------
-
-            // C. Tính hiệu số
-            long workMinutes = 0;
-            if (effectiveCheckOut.isAfter(effectiveCheckIn)) {
-                workMinutes = ChronoUnit.MINUTES.between(effectiveCheckIn, effectiveCheckOut);
-            }
-
-            // D. Trừ Break (Nghỉ trưa)
-            // Logic đơn giản: Nếu làm đủ lâu (> 4 tiếng) thì trừ break
-            if (breakMinutes != null && breakMinutes > 0) {
-                // Chỉ trừ nếu thời gian làm việc bao trùm break (cách đơn giản là check tổng giờ > 4h)
-                if (workMinutes >= 240) {
-                    workMinutes = Math.max(0, workMinutes - breakMinutes);
-                }
-            }
-
-            record.setTotalWorkMinutes((int) workMinutes);
-        } else {
-            // Chưa checkout
-            record.setTotalWorkMinutes(0);
-        }
     }
 }

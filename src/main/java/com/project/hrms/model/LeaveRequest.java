@@ -1,5 +1,6 @@
 package com.project.hrms.model;
 
+import com.project.hrms.model.enums.LeaveType;
 import com.project.hrms.model.enums.RequestStatus;
 import jakarta.persistence.*;
 import lombok.*;
@@ -36,8 +37,10 @@ public class LeaveRequest extends BaseEntity {
     @Column(columnDefinition = "TEXT")
     private String reason;
 
-    @Column(length = 100, nullable = false)
-    private String leaveType;
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    private LeaveType leaveType;
+
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)

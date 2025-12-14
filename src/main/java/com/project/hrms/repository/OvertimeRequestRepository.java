@@ -69,5 +69,16 @@ public interface OvertimeRequestRepository extends JpaRepository<OvertimeRequest
 """)
     List<Object[]> getMonthlyApprovedMinutes(int year);
 
+    Page<OvertimeRequest> findByStatus(
+            RequestStatus status,
+            Pageable pageable
+    );
+
+    Page<OvertimeRequest> findByEmployeeIdAndStatus(
+            Long employeeId,
+            RequestStatus status,
+            Pageable pageable
+    );
+
 }
 

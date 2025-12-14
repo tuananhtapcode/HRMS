@@ -1,5 +1,6 @@
 package com.project.hrms.response;
 
+import com.project.hrms.model.enums.LeaveType;
 import com.project.hrms.model.enums.RequestStatus;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -17,6 +18,7 @@ public class LeaveRequestResponse {
     private Long accountApproverId;
     private LocalDate startDate;
     private LocalDate endDate;
+    private String leaveType;
     private Integer totalDays;
     private String reason;
     private String status;

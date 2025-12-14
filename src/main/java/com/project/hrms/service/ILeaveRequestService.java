@@ -2,6 +2,7 @@ package com.project.hrms.service;
 
 import com.project.hrms.dto.RequestApproveDTO;
 import com.project.hrms.dto.LeaveRequestDTO;
+import com.project.hrms.model.LeaveRequest;
 import com.project.hrms.model.enums.RequestStatus;
 import com.project.hrms.response.LeaveRequestResponse;
 import org.springframework.data.domain.Page;
@@ -37,4 +38,22 @@ public interface ILeaveRequestService {
     long countApproved();
     long countRejected();
     long countCancelled();
+
+    /* ================= ADMIN / MANAGER ================= */
+
+    Page<LeaveRequestResponse> getAllPending(Pageable pageable);
+
+    Page<LeaveRequestResponse> getAllApproved(Pageable pageable);
+
+    Page<LeaveRequestResponse> getAllRejected(Pageable pageable);
+
+    /* ================= EMPLOYEE ================= */
+
+    Page<LeaveRequestResponse> getMyPending(Pageable pageable);
+
+    Page<LeaveRequestResponse> getMyApproved(Pageable pageable);
+
+    Page<LeaveRequestResponse> getMyRejected(Pageable pageable);
+
+
 }

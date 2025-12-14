@@ -8,6 +8,7 @@ import com.project.hrms.exception.InvalidParamException;
 import com.project.hrms.model.AuditLog;
 import com.project.hrms.model.Employee;
 import com.project.hrms.model.LeaveRequest;
+import com.project.hrms.model.enums.LeaveType;
 import com.project.hrms.model.enums.RequestStatus;
 import com.project.hrms.repository.AuditLogRepository;
 import com.project.hrms.repository.LeaveRequestRepository;
@@ -67,7 +68,9 @@ public class LeaveRequestService implements ILeaveRequestService {
     private void validateNoOverlap(Long employeeId, LocalDate start, LocalDate end, Long excludeId) {
         boolean exists = leaveRequestRepository.existsOverlap(employeeId, start, end, excludeId);
         if (exists) {
-            throw new IllegalArgumentException("Khoảng thời gian này đã có đơn nghỉ khác");
+            throw new IllegalArgumentException(
+                    "Khoảng thời gian này nhân viên id " + employeeId +" đã có đơn nghỉ phép PAID/UNPAID"
+            );
         }
     }
 
@@ -87,7 +90,7 @@ public class LeaveRequestService implements ILeaveRequestService {
                 .build();
 
         // Lưu audit vào repo tương tự OvertimeRequest
-         auditRepo.save(audit);
+        auditRepo.save(audit);
     }
 
     /* ---------------- API ------------------ */
@@ -121,15 +124,22 @@ public class LeaveRequestService implements ILeaveRequestService {
         }
 
         validateDateRange(dto.getStartDate(), dto.getEndDate());
-        validateNoOverlap(employeeId, dto.getStartDate(), dto.getEndDate(), null);
-
-        int totalDays = calculateLeaveDays(employee, dto.getStartDate(), dto.getEndDate());
-        if (totalDays > MAX_LEAVE_DAYS) {
-            throw new IllegalStateException("Số ngày nghỉ vượt quá hạn mức " + MAX_LEAVE_DAYS);
-        }
-
+//        if (dto.getLeaveType() == LeaveType.PAID) {
+            validateNoOverlap(employeeId, dto.getStartDate(), dto.getEndDate(), null);
+//        }
         LeaveRequest ent = leaveRequestMapper.toEntity(dto);
         ent.setEmployeeId(employeeId);
+        int totalDays = 0;
+
+        if (dto.getLeaveType() == LeaveType.PAID) {
+            totalDays = calculateLeaveDays(employee, dto.getStartDate(), dto.getEndDate());
+
+            if (totalDays > MAX_LEAVE_DAYS) {
+                throw new IllegalStateException("Số ngày nghỉ vượt quá hạn mức " + MAX_LEAVE_DAYS);
+            }
+        }
+        //UNPAID → totalDays = 0, KHÔNG check hạn mức.
+
         ent.setTotalDays(totalDays);
 
         LeaveRequest saved = leaveRequestRepository.save(ent);
@@ -157,19 +167,24 @@ public class LeaveRequestService implements ILeaveRequestService {
         }
 
         validateDateRange(dto.getStartDate(), dto.getEndDate());
-        validateNoOverlap(req.getEmployeeId(), dto.getStartDate(), dto.getEndDate(), req.getLeaveRequestId());
-
+//        if (dto.getLeaveType() == LeaveType.PAID) {
+            validateNoOverlap(req.getEmployeeId(), dto.getStartDate(), dto.getEndDate(), req.getLeaveRequestId());
+//        }
         Employee employee = employeeService.getById(req.getEmployeeId());
-        int totalDays = calculateLeaveDays(employee, dto.getStartDate(), dto.getEndDate());
+        int totalDays = 0;
 
-        if (totalDays > MAX_LEAVE_DAYS) {
-            throw new IllegalStateException("Số ngày nghỉ vượt hạn mức " + MAX_LEAVE_DAYS);
+        if (dto.getLeaveType() == LeaveType.PAID) {
+            totalDays = calculateLeaveDays(employee, dto.getStartDate(), dto.getEndDate());
+            if (totalDays > MAX_LEAVE_DAYS) {
+                throw new IllegalStateException("Số ngày nghỉ vượt hạn mức " + MAX_LEAVE_DAYS);
+            }
         }
 
+        req.setLeaveType(dto.getLeaveType());
+        req.setTotalDays(totalDays);
         req.setStartDate(dto.getStartDate());
         req.setEndDate(dto.getEndDate());
         req.setReason(dto.getReason());
-        req.setTotalDays(totalDays);
 
         LeaveRequest saved = leaveRequestRepository.save(req);
         saveAudit(saved.getLeaveRequestId(), AuditLog.AuditAction.UPDATE, currentUserId, "Cập nhật đơn nghỉ");
@@ -204,7 +219,6 @@ public class LeaveRequestService implements ILeaveRequestService {
 
         LeaveRequest saved = leaveRequestRepository.save(req);
         saveAudit(saved.getLeaveRequestId(), AuditLog.AuditAction.APPROVE, approverId, "Duyệt đơn nghỉ");
-
         return leaveRequestMapper.toResponse(saved);
     }
 
@@ -359,6 +373,54 @@ public class LeaveRequestService implements ILeaveRequestService {
     @Override
     public long countCancelled() {
         return leaveRequestRepository.countByStatus(RequestStatus.CANCELLED);
+    }
+
+    @Override
+    public Page<LeaveRequestResponse> getAllPending(Pageable pageable) {
+        return leaveRequestRepository
+                .findByStatus(RequestStatus.PENDING, pageable)
+                .map(leaveRequestMapper::toResponse);
+    }
+
+    @Override
+    public Page<LeaveRequestResponse> getAllApproved(Pageable pageable) {
+        return leaveRequestRepository
+                .findByStatus(RequestStatus.APPROVED, pageable)
+                .map(leaveRequestMapper::toResponse);
+    }
+
+    @Override
+    public Page<LeaveRequestResponse> getAllRejected(Pageable pageable) {
+        return leaveRequestRepository
+                .findByStatus(RequestStatus.REJECTED, pageable)
+                .map(leaveRequestMapper::toResponse);
+    }
+
+    @Override
+    public Page<LeaveRequestResponse> getMyPending(Pageable pageable) {
+        Long empId = authService.getCurrentUserId();
+
+        return leaveRequestRepository
+                .findByEmployeeIdAndStatus(empId, RequestStatus.PENDING, pageable)
+                .map(leaveRequestMapper::toResponse);
+    }
+
+    @Override
+    public Page<LeaveRequestResponse> getMyApproved(Pageable pageable) {
+        Long empId = authService.getCurrentUserId();
+
+        return leaveRequestRepository
+                .findByEmployeeIdAndStatus(empId, RequestStatus.APPROVED, pageable)
+                .map(leaveRequestMapper::toResponse);
+    }
+
+    @Override
+    public Page<LeaveRequestResponse> getMyRejected(Pageable pageable) {
+        Long empId = authService.getCurrentUserId();
+
+        return leaveRequestRepository
+                .findByEmployeeIdAndStatus(empId, RequestStatus.REJECTED, pageable)
+                .map(leaveRequestMapper::toResponse);
     }
 
 }

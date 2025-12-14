@@ -4,8 +4,10 @@ import com.project.hrms.dto.ActivateAccountDTO;
 import com.project.hrms.dto.LoginRequestDTO;
 import com.project.hrms.dto.LoginResponseDTO;
 import com.project.hrms.dto.RegisterRequestDTO;
+import com.project.hrms.model.Role;
 import com.project.hrms.response.ApiResponse;
 import com.project.hrms.security.JwtTokenProvider;
+import com.project.hrms.security.model.CustomUserDetails;
 import com.project.hrms.service.AuthService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -59,8 +61,18 @@ public class AuthController {
         // 3. Tạo JWT token
         String jwt = tokenProvider.generateToken(authentication);
 
+
+        // 4. Lấy thông tin user từ CustomUserDetails
+        CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
+        Long userId = userDetails.getAccount().getAccountId();
+        String username = userDetails.getUsername();
+        Role role = userDetails.getAccount().getRole(); // Hoặc lấy danh sách roles nếu nhiều
+
+        // 5. Trả về response với token + thông tin user
+        LoginResponseDTO response = new LoginResponseDTO(jwt, userId, username, role);
+
         // 4. Trả về token
-        return ResponseEntity.ok(new LoginResponseDTO(jwt));
+        return ResponseEntity.ok(response);
     }
 
     @PostMapping("/activate")

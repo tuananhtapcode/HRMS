@@ -15,6 +15,7 @@ public class LeaveRequestMapper {
                 .employeeId(dto.getEmployeeId())
                 .startDate(dto.getStartDate())
                 .endDate(dto.getEndDate())
+                .leaveType(dto.getLeaveType())
                 .status(RequestStatus.PENDING)
                 .reason(dto.getReason())
                 .build();
@@ -30,6 +31,7 @@ public class LeaveRequestMapper {
         resp.setStartDate(entity.getStartDate());
         resp.setEndDate(entity.getEndDate());
         resp.setTotalDays(entity.getTotalDays());
+        resp.setLeaveType(entity.getLeaveType().name());
         resp.setReason(entity.getReason());
         resp.setStatus(entity.getStatus().name());
         resp.setApprovedAt(entity.getApprovedAt());

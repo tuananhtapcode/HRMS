@@ -30,7 +30,7 @@ public interface IAttendanceRecordService
      */
     int getTotalWorkMinutes(Long employeeId, LocalDate date);
 
-    AttendanceResponse performCheckIn(String username);
-    AttendanceResponse performCheckOut(String username);
+//    AttendanceResponse performCheckIn(String username);
+//    AttendanceResponse performCheckOut(String username);
     AttendanceResponse tapAttendance(String username, AttendanceTapDTO dto);
 }

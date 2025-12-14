@@ -105,7 +105,7 @@ public class DailyTimesheetService implements IDailyTimesheetService {
 
         if (approvedLeave != null) {
             workday.setLeaveRequestId(approvedLeave.getLeaveRequestId());
-            String type = approvedLeave.getLeaveType() != null ? approvedLeave.getLeaveType().toLowerCase() : "";
+            String type = approvedLeave.getLeaveType() != null ? approvedLeave.getLeaveType().name().toLowerCase() : "";
 
             if (type.contains("không lương") || type.contains("unpaid")) {
                 finalStatus = AttendanceStatus.LEAVE_UNPAID;

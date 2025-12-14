@@ -93,7 +93,7 @@ public class OvertimeRequestService implements IOvertimeRequestService {
             overlaps.removeIf(o -> o.getOvertimeRequestId().equals(excludeId));
         }
         if (!overlaps.isEmpty())
-            throw new IllegalStateException("Thời gian OT trùng với OT khác đang PENDING/APPROVED");
+            throw new IllegalStateException("Nhân viên id "+employeeId+ " có thời gian OT trùng với OT khác đang PENDING/APPROVED cùng ngày");
     }
 
     /* ----------------------- API methods -------------------- */
@@ -379,7 +379,7 @@ public class OvertimeRequestService implements IOvertimeRequestService {
 
 
     @Override
-    public Page<OvertimeRequestResponse> listAll(RequestStatus status, Pageable pageable) {
+    public Page<OvertimeRequestResponse> getAll(RequestStatus status, Pageable pageable) {
         Page<OvertimeRequest> page;
         if (status != null) {
             page = overtimeRequestRepository.findAll(Example.of(OvertimeRequest.builder().status(status).build()), pageable);
@@ -387,6 +387,27 @@ public class OvertimeRequestService implements IOvertimeRequestService {
             page = overtimeRequestRepository.findAll(pageable);
         }
         return page.map(overtimeRequestMapper::toResponse);
+    }
+
+    @Override
+    public Page<OvertimeRequestResponse> getAllPending(Pageable pageable) {
+        return overtimeRequestRepository
+                .findByStatus(RequestStatus.PENDING, pageable)
+                .map(overtimeRequestMapper::toResponse);
+    }
+
+    @Override
+    public Page<OvertimeRequestResponse> getAllApproved(Pageable pageable) {
+        return overtimeRequestRepository
+                .findByStatus(RequestStatus.APPROVED, pageable)
+                .map(overtimeRequestMapper::toResponse);
+    }
+
+    @Override
+    public Page<OvertimeRequestResponse> getAllRejected(Pageable pageable) {
+        return overtimeRequestRepository
+                .findByStatus(RequestStatus.REJECTED, pageable)
+                .map(overtimeRequestMapper::toResponse);
     }
 
     @Override
@@ -400,6 +421,32 @@ public class OvertimeRequestService implements IOvertimeRequestService {
         return page.map(overtimeRequestMapper::toResponse);
     }
 
+    @Override
+    public Page<OvertimeRequestResponse> getMyPending(Pageable pageable) {
+        Long empId = authService.getCurrentUserId();
+
+        return overtimeRequestRepository
+                .findByEmployeeIdAndStatus(empId, RequestStatus.PENDING, pageable)
+                .map(overtimeRequestMapper::toResponse);
+    }
+
+    @Override
+    public Page<OvertimeRequestResponse> getMyApproved(Pageable pageable) {
+        Long empId = authService.getCurrentUserId();
+
+        return overtimeRequestRepository
+                .findByEmployeeIdAndStatus(empId, RequestStatus.APPROVED, pageable)
+                .map(overtimeRequestMapper::toResponse);
+    }
+
+    @Override
+    public Page<OvertimeRequestResponse> getMyRejected(Pageable pageable) {
+        Long empId = authService.getCurrentUserId();
+
+        return overtimeRequestRepository
+                .findByEmployeeIdAndStatus(empId, RequestStatus.REJECTED, pageable)
+                .map(overtimeRequestMapper::toResponse);
+    }
 
 
     @Override

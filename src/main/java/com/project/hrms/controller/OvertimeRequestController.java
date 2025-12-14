@@ -12,6 +12,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
@@ -90,7 +91,7 @@ public class OvertimeRequestController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size
     ) {
-        var res = overtimeService.listAll(status, PageRequest.of(page, size));
+        var res = overtimeService.getAll(status, PageRequest.of(page, size));
         return ResponseEntity.ok(ApiResponse.success("Get all overtime request", res));
     }
 
@@ -192,5 +193,45 @@ public class OvertimeRequestController {
     public ResponseEntity<ApiResponse<Map<Integer, Integer>>> monthlyStats(
             @RequestParam int year) {
         return ResponseEntity.ok(ApiResponse.success("OK", overtimeService.getMonthlyStats(year)));
+    }
+
+    /* ================= ADMIN / MANAGER ================= */
+
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
+    @GetMapping("/pending")
+    public Page<OvertimeRequestResponse> getAllPending(Pageable pageable) {
+        return overtimeService.getAllPending(pageable);
+    }
+
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
+    @GetMapping("/approved")
+    public Page<OvertimeRequestResponse> getAllApproved(Pageable pageable) {
+        return overtimeService.getAllApproved(pageable);
+    }
+
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
+    @GetMapping("/rejected")
+    public Page<OvertimeRequestResponse> getAllRejected(Pageable pageable) {
+        return overtimeService.getAllRejected(pageable);
+    }
+
+    /* ================= EMPLOYEE ================= */
+
+    @PreAuthorize("hasRole('EMPLOYEE')")
+    @GetMapping("/my/pending")
+    public Page<OvertimeRequestResponse> getMyPending(Pageable pageable) {
+        return overtimeService.getMyPending(pageable);
+    }
+
+    @PreAuthorize("hasRole('EMPLOYEE')")
+    @GetMapping("/my/approved")
+    public Page<OvertimeRequestResponse> getMyApproved(Pageable pageable) {
+        return overtimeService.getMyApproved(pageable);
+    }
+
+    @PreAuthorize("hasRole('EMPLOYEE')")
+    @GetMapping("/my/rejected")
+    public Page<OvertimeRequestResponse> getMyRejected(Pageable pageable) {
+        return overtimeService.getMyRejected(pageable);
     }
 }
