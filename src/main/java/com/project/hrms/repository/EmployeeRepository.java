@@ -1,6 +1,7 @@
 package com.project.hrms.repository;
 
 import com.project.hrms.model.Employee;
+import com.project.hrms.model.enums.EmployeeStatus;
 import jakarta.validation.constraints.NotBlank;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -39,7 +40,11 @@ public interface EmployeeRepository extends JpaRepository<Employee, Long>,
     // Tìm theo trạng thái
     List<Employee> findByStatus(String status);
 
+    // Đếm theo Status
+    long countByStatus(EmployeeStatus status);
 
+    // Đếm theo Loại hợp đồng + Status
+    long countByEmploymentTypeAndStatus(Employee.EmploymentType employmentType, EmployeeStatus status);
 //
 //    // Tìm theo tên chứa
 //    Page<Employee> findByFullNameContainingIgnoreCase(String name, Pageable pageable);

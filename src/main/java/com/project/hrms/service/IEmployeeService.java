@@ -66,4 +66,13 @@ public interface IEmployeeService {
      * Kèm theo Dropdown list dữ liệu có sẵn
      */
     Workbook getImportTemplate();
+
+    // --- DASHBOARD STATS ---
+    long countTotalEmployees();
+    long countFullTimeActive();
+    long countPartTimeActive();
+    long countByStatus(String status); // Truyền String status (ACTIVE, TERMINATED...)
+
+    // API trả về Map thống kê tất cả status 1 lúc cho tiện frontend gọi 1 lần
+    java.util.Map<String, Long> getEmployeeStatusStats();
 }

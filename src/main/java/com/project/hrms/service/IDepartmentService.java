@@ -6,7 +6,9 @@ import com.project.hrms.response.DepartmentResponse;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 
+import java.io.ByteArrayInputStream;
 import java.util.List;
+import java.util.Map;
 
 public interface IDepartmentService {
     Department create(DepartmentDTO newDepartmentDTO);
@@ -23,4 +25,7 @@ public interface IDepartmentService {
 
     Department findByManager_EmployeeId(Long managerId);
 
+    ByteArrayInputStream exportToExcel();
+
+    Map<String, Long> getDepartmentStats();
 }

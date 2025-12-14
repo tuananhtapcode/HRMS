@@ -2,20 +2,28 @@ package com.project.hrms.controller;
 
 import com.project.hrms.dto.DepartmentDTO;
 import com.project.hrms.model.Department;
+import com.project.hrms.response.ApiResponse;
 import com.project.hrms.response.DepartmentListResponse;
 import com.project.hrms.response.DepartmentResponse;
 import com.project.hrms.service.DepartmentService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.core.io.InputStreamResource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.ByteArrayInputStream;
+import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/v1/departments")
@@ -23,6 +31,15 @@ import java.util.List;
 public class DepartmentController {
 
     private final DepartmentService departmentService;
+
+    // --- DASHBOARD STATS API (Mới) ---
+    @GetMapping("/stats")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'HR')")
+    public ResponseEntity<?> getDepartmentStats() {
+        // Trả về Map: "Tên phòng ban": "Số lượng nhân viên"
+        Map<String, Long> stats = departmentService.getDepartmentStats();
+        return ResponseEntity.ok(ApiResponse.success("Lấy thống kê cơ cấu phòng ban thành công", stats));
+    }
 
     @PostMapping
     //synchronized đảm bảo 1 thread tạo phòng ban tại 1 thời điểm duy nhất, ap dung voi create
@@ -89,6 +106,18 @@ public class DepartmentController {
                 .toList());
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'HR', 'MANAGER')")
+    @GetMapping("/export/excel")
+    public ResponseEntity<InputStreamResource> exportToExcel() {
+        ByteArrayInputStream excel = departmentService.exportToExcel();
+        HttpHeaders headers = new HttpHeaders();
+        headers.add("Content-Disposition", "attachment; filename=department_" + LocalDate.now() + ".xlsx");
+
+        return ResponseEntity.ok()
+                .headers(headers)
+                .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+                .body(new InputStreamResource(excel));
+    }
 //    @GetMapping("/manager/{managerId}")
 //    public ResponseEntity<DepartmentResponse> getDepartmentsByManager(@PathVariable Long managerId) {
 //        Department departments = departmentService.findByManager_EmployeeId(managerId);
@@ -97,5 +126,6 @@ public class DepartmentController {
 //
 //        return ResponseEntity.ok(response);
 //    }
+
 
 }

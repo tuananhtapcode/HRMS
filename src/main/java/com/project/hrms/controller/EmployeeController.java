@@ -32,7 +32,9 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.time.LocalDate;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import static org.springframework.http.HttpStatus.BAD_REQUEST;
 
@@ -261,5 +263,17 @@ public class EmployeeController {
         Long currentUserId = authService.getCurrentUserId(); // lấy từ token
         EmployeeResponse employee = employeeService.getDetail(currentUserId);
         return ResponseEntity.ok(ApiResponse.success("Thông tin nhân viên hiện tại", employee));
+    }
+
+    @GetMapping("/dashboard-stats")
+    public ResponseEntity<?> getDashboardStats() {
+        Map<String, Object> data = new HashMap<>();
+
+        data.put("total", employeeService.countTotalEmployees());
+        data.put("fullTimeActive", employeeService.countFullTimeActive());
+        data.put("partTimeActive", employeeService.countPartTimeActive());
+        data.put("statusStats", employeeService.getEmployeeStatusStats());
+
+        return ResponseEntity.ok(ApiResponse.success("Thống kê nhân sự thành công", data));
     }
 }

@@ -679,6 +679,58 @@ public class EmployeeService implements IEmployeeService {
         return wb;
     }
 
+    // ==================================================================================
+    // PHẦN 5: DASHBOARD STATISTICS
+    // ==================================================================================
+
+    @Override
+    public long countTotalEmployees() {
+        return employeeRepository.count();
+    }
+
+    @Override
+    public long countFullTimeActive() {
+        return employeeRepository.countByEmploymentTypeAndStatus(
+                Employee.EmploymentType.FULLTIME,
+                EmployeeStatus.ACTIVE
+        );
+    }
+
+    @Override
+    public long countPartTimeActive() {
+        return employeeRepository.countByEmploymentTypeAndStatus(
+                Employee.EmploymentType.PARTTIME,
+                EmployeeStatus.ACTIVE
+        );
+    }
+
+    @Override
+    public long countByStatus(String statusStr) {
+        if (statusStr == null || statusStr.isBlank()) return 0;
+        try {
+            EmployeeStatus status = EmployeeStatus.valueOf(statusStr.toUpperCase());
+            return employeeRepository.countByStatus(status);
+        } catch (IllegalArgumentException e) {
+            return 0; // Trả về 0 nếu status không hợp lệ
+        }
+    }
+
+    @Override
+    public java.util.Map<String, Long> getEmployeeStatusStats() {
+        java.util.Map<String, Long> stats = new java.util.HashMap<>();
+
+        // Loop qua tất cả các trạng thái trong Enum để đếm
+        for (EmployeeStatus status : EmployeeStatus.values()) {
+            long count = employeeRepository.countByStatus(status);
+            stats.put(status.name(), count);
+        }
+
+        // Bonus: Thêm tổng số vào map luôn cho tiện
+        stats.put("TOTAL", countTotalEmployees());
+
+        return stats;
+    }
+
     // Helper tạo Named Range
     private void createNamedRange(Workbook wb, String name, String sheetName, int col, int rows) {
         Name namedRange = wb.createName();
