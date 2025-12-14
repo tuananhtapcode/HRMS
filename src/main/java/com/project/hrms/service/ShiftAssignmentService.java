@@ -300,9 +300,15 @@ public class ShiftAssignmentService {
      * API Lấy lịch làm việc của 1 nhân viên
      */
     public List<ShiftAssignmentDTO> getAssignmentsByEmployee(Long employeeId, LocalDate startDate, LocalDate endDate) {
-        return assignmentRepository.findByEmployee_EmployeeIdAndAssignmentDateBetween(employeeId, startDate, endDate)
+        // Truyền thêm true để chỉ lấy ca đã duyệt
+        return assignmentRepository.findByEmployee_EmployeeIdAndAssignmentDateBetweenAndIsApproved(
+                        employeeId,
+                        startDate,
+                        endDate,
+                        true
+                )
                 .stream()
-                .map(this::mapToExtendedDTO) // Dùng Map thủ công
+                .map(this::mapToExtendedDTO)
                 .collect(Collectors.toList());
     }
 
@@ -480,6 +486,25 @@ public class ShiftAssignmentService {
                 .collect(Collectors.toList());
     }
 
+    public void approveAssignment(Long id) {
+        ShiftAssignment assignment = assignmentRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy ca đăng ký này"));
+
+        // Admin bấm duyệt -> Set thành true
+        assignment.setIsApproved(true);
+
+        assignmentRepository.save(assignment);
+    }
+
+    public List<ShiftAssignmentDTO> getPendingAssignments() {
+        // Lấy list entity từ DB
+        List<ShiftAssignment> entities = assignmentRepository.findByIsApprovedFalseOrderByAssignmentDateAsc();
+
+        // Convert sang DTO (Dùng hàm mapToExtendedDTO bạn đã có hoặc map thủ công)
+        return entities.stream()
+                .map(this::mapToExtendedDTO)
+                .collect(Collectors.toList());
+    }
 
 
 }

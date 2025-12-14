@@ -28,6 +28,8 @@ public class SalaryComponentService {
         c.setType(dto.getType());
         c.setDescription(dto.getDescription());
         c.setIsActive(dto.getIsActive() != null ? dto.getIsActive() : true);
+        // 👇 Thêm dòng này
+        c.setAmount(dto.getAmount() != null ? dto.getAmount() : java.math.BigDecimal.ZERO);
         return salaryComponentRepository.save(c);
     }
 
@@ -52,6 +54,8 @@ public class SalaryComponentService {
         if (dto.getType() != null) c.setType(dto.getType());
         if (dto.getDescription() != null) c.setDescription(dto.getDescription());
         if (dto.getIsActive() != null) c.setIsActive(dto.getIsActive());
+        // 👇 Thêm dòng này để lưu tiền
+        if (dto.getAmount() != null) c.setAmount(dto.getAmount());
         return salaryComponentRepository.save(c);
     }
 }
