@@ -89,4 +89,14 @@ public class ShiftAssignmentController {
 
         return ResponseEntity.ok(ApiResponse.success("Lấy lịch phân ca phòng ban thành công", list));
     }
+
+    @GetMapping
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
+    public ResponseEntity<ApiResponse<List<ShiftAssignmentDTO>>> getAllAssignments(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
+
+        List<ShiftAssignmentDTO> list = assignmentService.getAllAssignments(startDate, endDate);
+        return ResponseEntity.ok(ApiResponse.success("Lấy dữ liệu phân ca thành công", list));
+    }
 }

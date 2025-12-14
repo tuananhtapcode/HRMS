@@ -39,4 +39,9 @@ public interface ShiftAssignmentRepository extends JpaRepository<ShiftAssignment
             @Param("startDate") LocalDate startDate,
             @Param("endDate") LocalDate endDate
     );
+
+    // --- THÊM ĐOẠN NÀY VÀO REPOSITORY ---
+
+    // Tìm tất cả các ca làm việc nằm trong khoảng ngày start và end
+    List<ShiftAssignment> findByAssignmentDateBetween(LocalDate startDate, LocalDate endDate);
 }

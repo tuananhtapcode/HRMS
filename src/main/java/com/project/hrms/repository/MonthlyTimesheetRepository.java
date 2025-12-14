@@ -2,6 +2,8 @@ package com.project.hrms.repository;
 
 import com.project.hrms.model.MonthlyTimesheet;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -21,4 +23,13 @@ public interface MonthlyTimesheetRepository extends JpaRepository<MonthlyTimeshe
     // [BẮT BUỘC PHẢI THÊM CÁI NÀY]
     // Để Service check xem nhân viên A tháng này đã có dòng nào chưa để Update
     List<MonthlyTimesheet> findByEmployee_EmployeeIdAndMonthAndYear(Long employeeId, int month, int year);
+    MonthlyTimesheet findTopByEmployee_EmployeeIdAndMonthAndYearOrderByIdDesc(Long employeeId, int month, int year);
+
+    @Query("""
+   select distinct mt.employee.employeeId
+   from MonthlyTimesheet mt
+   where mt.month = :month and mt.year = :year
+""")
+    List<Long> findDistinctEmployeeIdsByMonthYear(@Param("month") int month, @Param("year") int year);
+
 }
