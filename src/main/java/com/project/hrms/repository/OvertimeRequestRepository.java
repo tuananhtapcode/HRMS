@@ -80,5 +80,15 @@ public interface OvertimeRequestRepository extends JpaRepository<OvertimeRequest
             Pageable pageable
     );
 
+    // Giả sử OvertimeRequest có field tên là 'overtimeDate' (hoặc 'date').
+    // T dùng query này để lấy OT của đúng ngày đó.
+    // LƯU Ý: Kiểm tra lại tên biến 'o.overtimeDate' xem trong Entity của m đặt tên là gì
+    @Query("SELECT o FROM OvertimeRequest o " +
+            "WHERE o.employeeId = :employeeId " +
+            "AND o.status = :status " +
+            "AND o.date = :targetDate")
+    List<OvertimeRequest> findApprovedOvertimeForDate(@Param("employeeId") Long employeeId,
+                                                      @Param("status") RequestStatus status,
+                                                      @Param("targetDate") LocalDate targetDate);
 }
 

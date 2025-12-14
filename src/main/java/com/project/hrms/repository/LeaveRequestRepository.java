@@ -17,9 +17,6 @@ public interface LeaveRequestRepository extends JpaRepository<LeaveRequest, Long
     // Lấy lịch sử đơn nghỉ của 1 nhân viên (sắp xếp mới nhất trước)
     List<LeaveRequest> findByEmployeeIdOrderByCreatedAtDesc(Long employeeId);
 
-    List<LeaveRequest> findByEmployeeIdAndStatusAndDateBetween(
-          Long employeeId, RequestStatus requestStatus, LocalDate fromDate, LocalDate toDate
-);
 
     // Kiểm tra trùng đơn nghỉ đã APPROVED
 //    bỏ AND l.leaveType = :leaveType
@@ -74,5 +71,14 @@ public interface LeaveRequestRepository extends JpaRepository<LeaveRequest, Long
             RequestStatus status,
             Pageable pageable
     );
+
+    @Query("SELECT l FROM LeaveRequest l " +
+            "WHERE l.employeeId = :employeeId " +
+            "AND l.status = :status " +
+            "AND :targetDate >= l.startDate AND :targetDate <= l.endDate")
+    List<LeaveRequest> findApprovedLeaveForDate(@Param("employeeId") Long employeeId,
+                                                @Param("status") RequestStatus status,
+                                                @Param("targetDate") LocalDate targetDate);
+
 }
 

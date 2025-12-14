@@ -120,12 +120,12 @@ public class AttendanceRecordService implements IAttendanceRecordService {
         List<AttendanceRecord> existingRecords = attendanceRecordRepository
                 .findByEmployee_EmployeeIdAndAttendanceDate(employee.getEmployeeId(), date);
 
-        List<OvertimeRequest> approvedOts = otRequestRepository.findByEmployeeIdAndStatusAndDateBetween(
-                employee.getEmployeeId(), RequestStatus.APPROVED, date, date
+        List<OvertimeRequest> approvedOts = otRequestRepository.findApprovedOvertimeForDate(
+                employee.getEmployeeId(), RequestStatus.APPROVED, date
         );
 
-        List<LeaveRequest> approvedLeaves = leaveRequestRepository.findByEmployeeIdAndStatusAndDateBetween(
-                employee.getEmployeeId(), RequestStatus.APPROVED, date, date
+        List<LeaveRequest> approvedLeaves = leaveRequestRepository.findApprovedLeaveForDate(
+                employee.getEmployeeId(), RequestStatus.APPROVED, date
         );
 
         AttendanceRecord lastSavedRecord = null;
