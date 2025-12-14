@@ -10,11 +10,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.util.List;
-import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -68,7 +66,7 @@ public class DailyTimesheetService implements IDailyTimesheetService {
             totalStandardMinutes = 480.0; // Không có ca thì chuẩn vẫn là 8h (hoặc 0 tùy policy)
         }
 
-        // 4. [FIX LỖI CHÍNH] Lấy danh sách Record chấm công (List thay vì Optional)
+        // 4. Lấy danh sách Record chấm công
         List<AttendanceRecord> records = attendanceRepo.findByEmployee_EmployeeIdAndAttendanceDate(employeeId, date);
 
         // Cộng dồn giờ làm thực tế từ các Record (Sáng + Chiều + ...)
@@ -117,14 +115,12 @@ public class DailyTimesheetService implements IDailyTimesheetService {
         }
 
         // 7. Tính toán Giờ công (Regular) và Giờ thừa (Excess)
-        // Regular = Max là StandardMinutes. Nếu làm hơn thì là Excess.
         double regularMinutes = Math.min(actualTotalMinutes, totalStandardMinutes);
         workday.setHoursWorked(regularMinutes / 60.0);
 
         double excessMinutes = Math.max(0, actualTotalMinutes - totalStandardMinutes);
 
         // 8. Xử lý OT (Overtime)
-        // Cộng tổng tất cả các đơn OT trong ngày (phòng trường hợp OT trưa + OT tối)
         List<OvertimeRequest> ots = overtimeRepo.findByEmployeeIdAndStatusAndDateBetween(
                 employeeId, RequestStatus.APPROVED, date, date);
 
@@ -133,17 +129,23 @@ public class DailyTimesheetService implements IDailyTimesheetService {
 
         for (OvertimeRequest ot : ots) {
             if (ot.getTotalHours() != null) {
-                totalApprovedOtHours += ot.getTotalHours().doubleValue();
+                totalApprovedOtHours += ot.getTotalHours();
             }
             if (primaryOtRequest == null) primaryOtRequest = ot;
         }
 
-        workday.setOvertimeRequestId(primaryOtRequest.getOvertimeRequestId()); // Map đại diện 1 đơn
+        // --- [ĐOẠN ĐÃ SỬA LỖI NPE] ---
+        // Kiểm tra null trước khi gọi getOvertimeRequestId()
+        if (primaryOtRequest != null) {
+            workday.setOvertimeRequestId(primaryOtRequest.getOvertimeRequestId());
+        } else {
+            workday.setOvertimeRequestId(null);
+        }
+        // -----------------------------
 
         double totalApprovedOtMinutes = totalApprovedOtHours * 60.0;
 
         // OT thực tế = Min(Số phút làm dư ra, Số phút đã duyệt)
-        // Nếu không làm dư ra (excess = 0) thì dù có đơn duyệt cũng không tính tiền OT
         double finalOtMinutes = Math.min(totalApprovedOtMinutes, excessMinutes);
 
         workday.setHoursOvertime(finalOtMinutes / 60.0);

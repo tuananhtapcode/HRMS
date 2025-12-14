@@ -124,7 +124,7 @@ public class AttendanceRecordService implements IAttendanceRecordService {
                 employee.getEmployeeId(), RequestStatus.APPROVED, date, date
         );
 
-        List<LeaveRequest> approvedLeaves = leaveRequestRepository.findByEmployeeIdAndStatusAndDateBetween(
+        List<LeaveRequest> approvedLeaves = leaveRequestRepository.findByEmployeeIdAndStatusAndStartDateBetween(
                 employee.getEmployeeId(), RequestStatus.APPROVED, date, date
         );
 

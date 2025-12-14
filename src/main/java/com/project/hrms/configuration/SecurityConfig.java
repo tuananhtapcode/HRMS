@@ -53,7 +53,7 @@ public class SecurityConfig {
     }
 
 //    dùng bỏ qua authen cho tất cả các endpoint
-    @Value("${security.disabled:true}")
+    @Value("${security.disabled:false}")
     private boolean securityDisabled;
 
     @Bean
